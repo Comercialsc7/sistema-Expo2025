@@ -14,15 +14,14 @@ export default function PaymentMethodScreen() {
     const term = paymentTerms.find(t => t.id === termId);
     if (term) {
       useOrderStore.getState().setPaymentTerm(term);
+      router.push({
+        pathname: '/(tabs)/create-order',
+        params: {
+          clientId,
+          clientName,
+        }
+      });
     }
-    router.push({
-      pathname: '/(tabs)/create-order/product-search',
-      params: {
-        clientId,
-        clientName,
-        paymentTermId: termId,
-      }
-    });
   };
 
   return (

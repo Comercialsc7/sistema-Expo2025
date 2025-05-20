@@ -63,10 +63,11 @@ export default function SpinWheelScreen() {
       router.push({
         pathname: '/(tabs)/create-order/complete',
         params: { 
-          // Exemplo: você precisaria adicionar aqui todos os parâmetros originais do pedido
-          // subtotal: params.subtotal, // Isso pode ser necessário
-          // itens: params.itens,
-          // ... outros parâmetros do pedido ...
+          subtotal: params.subtotal,
+          itens: params.itens,
+          desconto: params.desconto,
+          total: params.total,
+          prazo: params.prazo,
         }
       });
     }

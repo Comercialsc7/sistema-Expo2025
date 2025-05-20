@@ -1,18 +1,20 @@
 import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet } from 'react-native';
 import { ArrowLeft, Plus, Minus, Heart, Trash2 } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useOrderStore } from '../../../store/useOrderStore';
 
 export default function OrderSummary() {
   const { items: orderItems, removeItem, updateItemQuantity, client, paymentTerm } = useOrderStore();
+  const params = useLocalSearchParams();
+  const prazoDescricaoParam = params.prazoDescricao as string | undefined;
 
   // Cálculos dinâmicos
   const subtotal = useMemo(() => orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0), [orderItems]);
   const aceleradores = useMemo(() => orderItems.filter(item => item.isAccelerator).length, [orderItems]);
   const desconto = useMemo(() => orderItems.reduce((sum, item) => sum + ((item.price * item.quantity) * (item.discount / 100)), 0), [orderItems]);
   const total = subtotal - desconto;
-  const prazo = orderItems[0]?.paymentTerm?.days || 0;
+  const prazo = paymentTerm?.days || 0;
 
   const handleQtyChange = (idx: number, delta: number) => {
     const item = orderItems[idx];
@@ -51,81 +53,83 @@ export default function OrderSummary() {
           <Plus size={24} color="#fff" />
         </TouchableOpacity>
       </View>
-      <ScrollView style={styles.itemsList}>
-        {orderItems.map((item, idx) => (
-          <View key={idx} style={styles.itemCard}>
-            <Image source={{ uri: item.image }} style={styles.itemImage} />
-            <View style={styles.itemInfo}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.itemCode}>{item.id}</Text>
-                {item.isAccelerator && <Heart size={16} color="#A259FF" fill="#A259FF" style={{ marginLeft: 4 }} />}
+      <View style={styles.contentArea}>
+        <View style={styles.itemsList}>
+          {orderItems.map((item, idx) => (
+            <View key={idx} style={styles.itemCard}>
+              <Image source={{ uri: item.image }} style={styles.itemImage} />
+              <View style={styles.itemInfo}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.itemCode}>{item.id}</Text>
+                  {item.isAccelerator && <Heart size={16} color="#A259FF" fill="#A259FF" style={{ marginLeft: 4 }} />}
+                </View>
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={styles.itemBox}>{item.box}</Text>
+                <Text style={styles.itemPrice}>R$ {item.price.toFixed(2)} <Text style={styles.itemDiscount}>-5%</Text></Text>
               </View>
-              <Text style={styles.itemName}>{item.name}</Text>
-              <Text style={styles.itemBox}>{item.box}</Text>
-              <Text style={styles.itemPrice}>R$ {item.price.toFixed(2)} <Text style={styles.itemDiscount}>-5%</Text></Text>
-            </View>
-            <View style={styles.qtyControl}>
-              <TouchableOpacity onPress={() => handleQtyChange(idx, -1)}>
-                <Minus size={18} color="#003B71" />
+              <View style={styles.qtyControl}>
+                <TouchableOpacity onPress={() => handleQtyChange(idx, -1)}>
+                  <Minus size={18} color="#003B71" />
+                </TouchableOpacity>
+                <Text style={styles.qtyText}>{item.quantity}</Text>
+                <TouchableOpacity onPress={() => handleQtyChange(idx, 1)}>
+                  <Plus size={18} color="#003B71" />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity onPress={() => handleRemoveItem(idx)} style={{ marginLeft: 8 }}>
+                <Trash2 size={20} color="#FF3B30" />
               </TouchableOpacity>
-              <Text style={styles.qtyText}>{item.quantity}</Text>
-              <TouchableOpacity onPress={() => handleQtyChange(idx, 1)}>
-                <Plus size={18} color="#003B71" />
-              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => handleRemoveItem(idx)} style={{ marginLeft: 8 }}>
-              <Trash2 size={20} color="#FF3B30" />
-            </TouchableOpacity>
+          ))}
+        </View>
+        <View style={styles.summaryBox}>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Subtotal</Text>
+            <Text style={styles.summaryValue}>R$ {subtotal.toFixed(2)}</Text>
           </View>
-        ))}
-      </ScrollView>
-      <View style={styles.summaryBox}>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Subtotal</Text>
-          <Text style={styles.summaryValue}>R$ {subtotal.toFixed(2)}</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Itens Aceleradores</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={[styles.summaryValue, { marginRight: 4 }]}>{aceleradores}</Text>
-            <Heart size={16} color="#A259FF" fill="#A259FF" />
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Itens Aceleradores</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={[styles.summaryValue, { marginRight: 4 }]}>{aceleradores}</Text>
+              <Heart size={16} color="#A259FF" fill="#A259FF" />
+            </View>
           </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Desconto</Text>
+            <Text style={[styles.summaryValue, { color: '#FF3B30' }]}>R$ {desconto.toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { fontWeight: 'bold' }]}>Total</Text>
+            <Text style={[styles.summaryValue, { fontWeight: 'bold' }]}>R$ {total.toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Prazo de pagamento</Text>
+            <Text style={[styles.summaryValue, { color: '#003B71', fontWeight: 'bold' }]}>
+              {prazoDescricaoParam || paymentTerm?.description || 'Não definido'}
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={[styles.finishButton, !prazo && styles.finishButtonDisabled]} 
+            onPress={() => {
+              if (prazo) {
+                router.push({
+                  pathname: '/(tabs)/create-order/complete',
+                  params: {
+                    subtotal: subtotal.toFixed(2),
+                    itens: orderItems.length,
+                    desconto: desconto.toFixed(2),
+                    total: total.toFixed(2),
+                    prazo: prazo,
+                  }
+                });
+              }
+            }}
+            disabled={!prazo}
+          >
+            <Text style={styles.finishButtonText}>Finalizar Pedido</Text>
+          </TouchableOpacity>
         </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Desconto</Text>
-          <Text style={[styles.summaryValue, { color: '#FF3B30' }]}>R$ {desconto.toFixed(2)}</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryRow}>
-          <Text style={[styles.summaryLabel, { fontWeight: 'bold' }]}>Total</Text>
-          <Text style={[styles.summaryValue, { fontWeight: 'bold' }]}>R$ {total.toFixed(2)}</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Prazo de pagamento</Text>
-          <Text style={[styles.summaryValue, { color: '#003B71', fontWeight: 'bold' }]}>
-            {prazo > 0 ? `${prazo} dias` : 'Não definido'}
-          </Text>
-        </View>
-        <TouchableOpacity 
-          style={[styles.finishButton, !prazo && styles.finishButtonDisabled]} 
-          onPress={() => {
-            if (prazo) {
-              router.push({
-                pathname: '/(tabs)/create-order/complete',
-                params: {
-                  subtotal: subtotal.toFixed(2),
-                  itens: orderItems.length,
-                  desconto: desconto.toFixed(2),
-                  total: total.toFixed(2),
-                  prazo: prazo,
-                }
-              });
-            }
-          }}
-          disabled={!prazo}
-        >
-          <Text style={styles.finishButtonText}>Finalizar Pedido</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -160,10 +164,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 6,
   },
-  itemsList: {
+  contentArea: {
     flex: 1,
     paddingHorizontal: 8,
     marginBottom: 8,
+    justifyContent: 'space-between',
+  },
+  itemsList: {
   },
   itemCard: {
     flexDirection: 'row',
