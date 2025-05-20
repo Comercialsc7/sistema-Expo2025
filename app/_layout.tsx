@@ -1,17 +1,30 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { Stack, usePathname } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium, Montserrat_600SemiBold, Montserrat_700Bold } from '@expo-google-fonts/montserrat';
 import { SplashScreen } from 'expo-router';
-import { Menu } from 'lucide-react-native';
-import { Sidebar } from '../components/ui/Sidebar';
+import { Menu, Home, Package, Users, Settings, LogOut } from 'lucide-react-native';
+import { Sidebar, MenuItem } from '../components/shared/Sidebar';
 
 export default function RootLayout() {
   useFrameworkReady();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  const menuItems: MenuItem[] = [
+    { title: 'Início', route: '/(tabs)', icon: Home },
+    { title: 'Produtos', route: '/(tabs)/products', icon: Package },
+    { title: 'Clientes', route: '/(tabs)/clients', icon: Users },
+    { title: 'Configurações', route: '/(tabs)/settings', icon: Settings },
+    { title: 'Sair', route: '/login', icon: LogOut, color: '#FF3B30' },
+  ];
+
+  const handleNavigation = (route: string) => {
+    router.push(route as any);
+  };
 
   const [fontsLoaded, fontError] = useFonts({
     'Montserrat-Regular': Montserrat_400Regular,
@@ -45,7 +58,9 @@ export default function RootLayout() {
 
           <Sidebar 
             isOpen={isSidebarOpen} 
-            onClose={() => setIsSidebarOpen(false)} 
+            onClose={() => setIsSidebarOpen(false)}
+            onNavigate={handleNavigation}
+            menuItems={menuItems}
           />
         </>
       )}

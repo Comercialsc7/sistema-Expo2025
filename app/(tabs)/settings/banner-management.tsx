@@ -23,6 +23,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture, Directions } from 'react-native-gesture-handler';
+import { Banner } from '../../../store/useBannerStore';
 
 const defaultColors = [
   "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#D4A5A5",
@@ -32,17 +33,21 @@ const defaultColors = [
 export default function BannerManagement() {
   const { banners, addBanner, updateBanner, deleteBanner, reorderBanners } = useBannerStore();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingBanner, setEditingBanner] = useState(null);
-  const [draggingIndex, setDraggingIndex] = useState(null);
-  const [sortedBanners, setSortedBanners] = useState(banners);
+  const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const translateY = useSharedValue(0);
   const isDragging = useSharedValue(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string;
+    subtitle: string;
+    backgroundColor: string;
+    image: string;
+  }>({
     title: '',
     subtitle: '',
     backgroundColor: defaultColors[0],
-    image: null,
+    image: '',
   });
 
   const handleAddBanner = () => {
@@ -51,12 +56,12 @@ export default function BannerManagement() {
       title: '',
       subtitle: '',
       backgroundColor: defaultColors[0],
-      image: null,
+      image: '',
     });
     setIsModalVisible(true);
   };
 
-  const handleEditBanner = (banner) => {
+  const handleEditBanner = (banner: Banner) => {
     setEditingBanner(banner);
     setFormData({
       title: banner.title,
@@ -67,7 +72,7 @@ export default function BannerManagement() {
     setIsModalVisible(true);
   };
 
-  const handleDeleteBanner = (bannerId) => {
+  const handleDeleteBanner = (bannerId: number) => {
     deleteBanner(bannerId);
   };
 
@@ -88,7 +93,7 @@ export default function BannerManagement() {
     if (editingBanner) {
       updateBanner(editingBanner.id, formData);
     } else {
-      const newBanner = {
+      const newBanner: Banner = {
         id: Date.now(),
         ...formData,
         order: banners.length,
@@ -123,7 +128,7 @@ export default function BannerManagement() {
       }
     });
 
-  const renderBanner = (banner, index) => {
+  const renderBanner = (banner: Banner, index: number) => {
     const isBeingDragged = index === draggingIndex;
     const animatedStyle = useAnimatedStyle(() => ({
       transform: [

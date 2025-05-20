@@ -3,31 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollVi
 import { router } from 'expo-router';
 import { ArrowLeft, Search, Building2 } from 'lucide-react-native';
 import { useOrderStore } from '../../../store/useOrderStore';
-
-interface Client {
-  id: string;
-  name: string;
-  code: string;
-  cnpj: string;
-  address: string;
-}
-
-const mockClients: Client[] = [
-  {
-    id: '1',
-    name: 'Supermercado Silva',
-    code: '001',
-    cnpj: '12.345.678/0001-90',
-    address: 'Rua das Flores, 123',
-  },
-  {
-    id: '2',
-    name: 'Mercado Santos',
-    code: '002',
-    cnpj: '98.765.432/0001-21',
-    address: 'Av. Principal, 456',
-  },
-];
+import { mockClients, Client } from '../../../data/mocks';
 
 export default function SelectClient() {
   const [searchQuery, setSearchQuery] = useState('');

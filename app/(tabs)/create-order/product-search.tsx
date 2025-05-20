@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image, ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Search, Diamond, Calendar } from 'lucide-react-native';
+import { ArrowLeft, Search, Diamond, Calendar, Heart } from 'lucide-react-native';
 import Animated, { 
   SlideInUp,
   Layout,
@@ -9,59 +9,16 @@ import Animated, {
 } from 'react-native-reanimated';
 import { usePaymentTermsStore } from '../../../store/usePaymentTermsStore';
 import { useOrderStore } from '../../../store/useOrderStore';
-
-interface Product {
-  id: string;
-  name: string;
-  code: string;
-  price: number;
-  boxSize: number;
-  discount: number;
-  isAccelerator: boolean;
-  image: string;
-}
-
-const mockProducts: Product[] = [
-  {
-    id: '64526',
-    name: 'Slice Original 90g',
-    code: 'SLI001',
-    price: 89.90,
-    boxSize: 28,
-    discount: 5,
-    isAccelerator: true,
-    image: 'https://slicebrasil.com.br/wp-content/uploads/2024/12/logo.svg'
-  },
-  {
-    id: '64527',
-    name: 'Slice Maçã Verde 90g',
-    code: 'SLI002',
-    price: 89.90,
-    boxSize: 28,
-    discount: 5,
-    isAccelerator: true,
-    image: 'https://slicebrasil.com.br/wp-content/uploads/2024/12/logo.svg'
-  },
-  {
-    id: '64528',
-    name: 'Slice Laranja 90g',
-    code: 'SLI003',
-    price: 89.90,
-    boxSize: 28,
-    discount: 10,
-    isAccelerator: true,
-    image: 'https://slicebrasil.com.br/wp-content/uploads/2024/12/logo.svg'
-  },
-];
+import { mockProducts, Product } from '../../../data/mocks';
 
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 export default function ProductSearch() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { paymentTermId } = useLocalSearchParams();
+  const { clientId, clientName, paymentTermId } = useLocalSearchParams();
   const paymentTerms = usePaymentTermsStore(state => state.paymentTerms);
   const selectedPaymentTerm = paymentTerms.find(term => term.id === paymentTermId);
-  const addItem = useOrderStore(state => state.addItem);
+  const { addItem } = useOrderStore();
 
   const filteredProducts = mockProducts.filter(product =>
     Object.values(product).some(value =>

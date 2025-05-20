@@ -2,33 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView, Image } from 'react-native';
 import { Search, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
-
-const mockBrands = [
-  { 
-    id: '1', 
-    name: 'Slice', 
-    code: 'SLI',
-    image: 'https://slicebrasil.com.br/wp-content/uploads/2024/12/logo.svg' 
-  },
-  { 
-    id: '2', 
-    name: 'Nestlé', 
-    code: 'NES',
-    image: 'https://assets.ype.ind.br/assets/logo_ype_3d.png' 
-  },
-  { 
-    id: '3', 
-    name: 'Bauducco', 
-    code: 'BAU',
-    image: 'https://www.lojabauducco.com.br/arquivos/logo-bauducco.png?v=638322222120300000' 
-  },
-  { 
-    id: '4', 
-    name: 'Heinz', 
-    code: 'HEI',
-    image: 'https://kreafolk.com/cdn/shop/articles/heinz-logo-design-history-and-evolution-kreafolk_51be050e-1ba4-4aad-a0d4-9f7c30b6787b.jpg?v=1717725012&width=2048' 
-  },
-];
+import { mockBrands } from '../../../data/mocks';
 
 export default function BrandsScreen() {
   const [searchQuery, setSearchQuery] = useState('');

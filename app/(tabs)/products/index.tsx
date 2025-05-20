@@ -1,48 +1,36 @@
+import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { Plus, Search, Diamond } from 'lucide-react-native';
-
-const mockProducts = [
-  {
-    id: '1',
-    name: 'Slice Original',
-    code: 'SLI001',
-    price: 89.90,
-    quantity: 28,
-    isAccelerator: true,
-    image: 'https://images.unsplash.com/photo-1627843563095-f6e94676cfe0?w=200&h=200&fit=crop'
-  },
-  {
-    id: '2',
-    name: 'Coca-Cola 2L',
-    code: 'COC002',
-    price: 8.99,
-    quantity: 6,
-    isAccelerator: false,
-    image: 'https://images.unsplash.com/photo-1570831739435-6601aa3fa4fb?w=200&h=200&fit=crop'
-  },
-];
+import { Plus, Search, Heart } from 'lucide-react-native';
+import { mockProducts, Product } from '../../../data/mocks';
 
 export default function ProductsScreen() {
   const handleAddProduct = () => {
     router.push('/products/product-management');
   };
 
-  const renderProduct = ({ item }) => (
-    <View style={styles.productCard}>
+  const renderProduct = ({ item }: { item: Product }) => (
+    <TouchableOpacity 
+      style={styles.productCard}
+      onPress={() => router.push({
+        pathname: '/products/product-management',
+        params: { id: item.id }
+      })}
+    >
       <Image source={{ uri: item.image }} style={styles.productImage} />
-      {item.isAccelerator && (
-        <View style={styles.acceleratorBadge}>
-          <Diamond size={16} color="#FFFFFF" />
-        </View>
-      )}
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{item.name}</Text>
         <Text style={styles.productCode}>Código: {item.code}</Text>
-        <Text style={styles.productPrice}>R$ {item.price.toFixed(2)}</Text>
-        <Text style={styles.productQuantity}>Cx {item.quantity} unds.</Text>
+        <View style={styles.productDetails}>
+          <Text style={styles.productPrice}>R$ {item.price.toFixed(2)}</Text>
+          {item.isAccelerator && (
+            <View style={styles.acceleratorBadge}>
+              <Heart size={16} color="#A259FF" fill="#A259FF" />
+            </View>
+          )}
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -201,5 +189,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     fontFamily: 'Montserrat-Regular',
+  },
+  productDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });

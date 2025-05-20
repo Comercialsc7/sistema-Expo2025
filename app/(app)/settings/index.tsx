@@ -1,6 +1,7 @@
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView } from 'react-native';
 import { router } from 'expo-router';
-import { Image as ImageIcon, Package, Diamond, ChevronRight, Calendar, Building2 } from 'lucide-react-native';
+import { Image as ImageIcon, Package, Diamond, ChevronRight, Calendar } from 'lucide-react-native';
 import { useBannerStore } from '../../../store/useBannerStore';
 
 const settingsOptions = [
@@ -9,15 +10,15 @@ const settingsOptions = [
     title: 'Banners Promocionais',
     description: 'Gerencie os banners do carrossel principal',
     icon: ImageIcon,
-    route: '/settings/banner-management',
+    route: '/(app)/settings/banner-management',
     getCount: (state: any) => state.banners?.length || 0,
   },
   {
     id: 'brands',
     title: 'Marcas',
     description: 'Cadastre e gerencie as marcas disponíveis',
-    icon: Building2,
-    route: '/brands',
+    icon: Package,
+    route: '/(app)/settings/brand-management',
     getCount: () => 12, // This would be dynamic once we have brand management
   },
   {
@@ -25,7 +26,7 @@ const settingsOptions = [
     title: 'Produtos Aceleradores',
     description: 'Configure os produtos com status de acelerador',
     icon: Diamond,
-    route: '/settings/accelerator-management',
+    route: '/(app)/settings/accelerator-management',
     getCount: () => 8, // This would be dynamic once we have accelerator management
   },
   {
@@ -33,7 +34,7 @@ const settingsOptions = [
     title: 'Prazos de Pagamento',
     description: 'Configure os prazos de pagamento disponíveis',
     icon: Calendar,
-    route: '/settings/payment-terms',
+    route: '/(app)/settings/payment-terms',
     getCount: () => 3, // This would be dynamic once we have payment terms management
   },
 ];
@@ -54,7 +55,7 @@ export default function SettingsScreen() {
           <TouchableOpacity
             key={option.id}
             style={styles.optionCard}
-            onPress={() => router.push(option.route)}
+            onPress={() => router.push(option.route as any)}
           >
             <View style={styles.optionIcon}>
               <option.icon size={24} color="#003B71" />
@@ -160,4 +161,4 @@ const styles = StyleSheet.create({
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
   },
-});
+}); 

@@ -2,37 +2,14 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView } from 'react-native';
 import { Search, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
-
-const mockClients = [
-  {
-    id: '1',
-    code: '001',
-    name: 'Silva & Cia Ltda',
-    fantasyName: 'Supermercado Silva',
-    cnpj: '12.345.678/0001-90',
-  },
-  {
-    id: '2',
-    code: '002',
-    name: 'Comercial Santos Ltda',
-    fantasyName: 'Mercado Santos',
-    cnpj: '98.765.432/0001-21',
-  },
-  {
-    id: '3',
-    code: '003',
-    name: 'Oliveira Comércio Eireli',
-    fantasyName: 'Minimercado Oliveira',
-    cnpj: '45.678.901/0001-34',
-  },
-];
+import { mockClients } from '../../../data/mocks';
 
 export default function ClientManagement() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredClients = mockClients.filter(client =>
     Object.values(client).some(value =>
-      value.toLowerCase().includes(searchQuery.toLowerCase())
+      String(value).toLowerCase().includes(searchQuery.toLowerCase())
     )
   );
 
