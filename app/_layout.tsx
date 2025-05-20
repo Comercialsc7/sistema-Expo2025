@@ -43,7 +43,7 @@ export default function RootLayout() {
     return null;
   }
 
-  const showNavigation = pathname !== '/login';
+  const showNavigation = pathname !== '/login' && !pathname.includes('spin-wheel');
 
   return (
     <View style={styles.container}>

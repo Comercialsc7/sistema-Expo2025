@@ -1,17 +1,19 @@
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 
-export default function OrderLayout() {
+export default function CreateOrderLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="index" />
-      <Stack.Screen name="product-search" />
-      <Stack.Screen name="select-client" />
-      <Stack.Screen name="select-payment" />
-      <Stack.Screen name="complete" />
-    </Stack>
+    <View style={styles.container}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="spin-wheel" />
+      </Stack>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});

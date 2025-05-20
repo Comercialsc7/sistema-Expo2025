@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { MoreVertical } from 'lucide-react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useRouter } from 'expo-router';
+import { useSpinResultsStore } from '../../../store/useSpinResultsStore';
 const Diamond = require('../../../assets/images/diamond.png');
 
 export default function FinalizarPedido() {
@@ -16,6 +17,14 @@ export default function FinalizarPedido() {
   const faltaGiro = 3000 - (total % 3000) || 0;
   const giros = Math.floor(total / 3000);
   const router = useRouter();
+
+  const { results, clearResults } = useSpinResultsStore();
+
+  useEffect(() => {
+    return () => {
+      clearResults();
+    };
+  }, []);
 
   return (
     <View style={styles.screen}>
@@ -53,6 +62,20 @@ export default function FinalizarPedido() {
           <Text style={styles.bonusText}>Você Ganhou {giros} Giro da Sorte</Text>
           <Image source={Diamond} style={[styles.diamondIcon, styles.diamondRight]} />
         </View>
+        {/* Seção de Prêmios Ganhos */}
+        {results.length > 0 && (
+          <View style={styles.wonPrizesBox}>
+            <Text style={styles.wonPrizesTitle}>Prêmios Ganhos:</Text>
+            {results.map((result, index) => (
+              <View key={index} style={styles.wonPrizeItem}>
+                <Text style={styles.wonPrizeText}>- {result.prize}</Text>
+                {result.photoUri && (
+                  <Image source={{ uri: result.photoUri }} style={styles.wonPrizeImage} />
+                )}
+              </View>
+            ))}
+          </View>
+        )}
         {/* Novo label: quanto falta para o próximo giro da sorte */}
         <View style={styles.giroLabelBox}>
           <Text style={styles.giroLabelText}>Faltam <Text style={styles.giroLabelValue}>R$ {faltaGiro.toFixed(2)}</Text> para o próximo giro da sorte</Text>
@@ -68,9 +91,14 @@ export default function FinalizarPedido() {
         <TouchableOpacity style={styles.addButton} onPress={() => router.back()}>
           <Text style={styles.addButtonText}>Adicionar mais itens</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.spinButton}>
-          <Text style={styles.spinButtonText}>Girar Roleta</Text>
-        </TouchableOpacity>
+        {giros > 0 && (
+          <TouchableOpacity style={styles.spinButton} onPress={() => router.push({
+            pathname: '/(tabs)/create-order/spin-wheel',
+            params: { girosDisponiveis: giros }
+          })}>
+            <Text style={styles.spinButtonText}>Girar Roleta</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -165,6 +193,8 @@ const styles = StyleSheet.create({
     position: 'relative',
     paddingVertical: 40,
     minHeight: 100,
+    borderWidth: 2,
+    borderColor: '#941b80',
   },
   bonusText: {
     color: '#fff',
@@ -235,7 +265,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   spinButton: {
-    backgroundColor: '#fff',
+    backgroundColor: '#941b80',
     borderRadius: 12,
     marginTop: 12,
     paddingVertical: 12,
@@ -243,7 +273,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   spinButtonText: {
-    color: '#1560A8',
+    color: '#fff',
     fontWeight: 'bold',
     fontSize: 17,
   },
@@ -260,5 +290,35 @@ const styles = StyleSheet.create({
   giroLabelValue: {
     color: '#FF3B30',
     fontWeight: 'bold',
+  },
+  wonPrizesBox: {
+    marginTop: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#003B71',
+    borderRadius: 12,
+    width: '100%',
+  },
+  wonPrizesTitle: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginBottom: 8,
+  },
+  wonPrizeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  wonPrizeText: {
+    color: '#fff',
+    fontSize: 16,
+    marginRight: 8,
+  },
+  wonPrizeImage: {
+    width: 50,
+    height: 50,
+    resizeMode: 'cover',
+    borderRadius: 8,
   },
 });
