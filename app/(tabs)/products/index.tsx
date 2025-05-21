@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { Plus, Search, Heart } from 'lucide-react-native';
+import { Plus, Search } from 'lucide-react-native';
 import { mockProducts, Product } from '../../../data/mocks';
+
+const Diamond = require('../../../assets/images/diamond.png');
 
 export default function ProductsScreen() {
   const handleAddProduct = () => {
@@ -17,19 +19,26 @@ export default function ProductsScreen() {
         params: { id: item.id }
       })}
     >
-      <Image source={{ uri: item.image }} style={styles.productImage} />
-      <View style={styles.productInfo}>
-        <Text style={styles.productName}>{item.name}</Text>
-        <Text style={styles.productCode}>Código: {item.code}</Text>
-        <View style={styles.productDetails}>
-          <Text style={styles.productPrice}>R$ {item.price.toFixed(2)}</Text>
-          {item.isAccelerator && (
-            <View style={styles.acceleratorBadge}>
-              <Heart size={16} color="#A259FF" fill="#A259FF" />
+      {item.isAccelerator ? (
+        <>
+          <Image source={{ uri: item.image }} style={styles.productImage} />
+          <View style={styles.productInfo}>
+            <Text style={styles.productName}>{item.name}</Text>
+            <Text style={styles.productCode}>Código: {item.code}</Text>
+            <View style={styles.productDetails}>
+              <Text style={styles.productPrice}>R$ {item.price.toFixed(2)}</Text>
             </View>
-          )}
+          </View>
+        </>
+      ) : (
+        <View style={styles.productInfoNoImage}>
+          <Text style={styles.productName}>{item.name}</Text>
+          <Text style={styles.productCode}>Código: {item.code}</Text>
+          <View style={styles.productDetails}>
+            <Text style={styles.productPrice}>R$ {item.price.toFixed(2)}</Text>
+          </View>
         </View>
-      </View>
+      )}
     </TouchableOpacity>
   );
 
@@ -133,6 +142,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -152,8 +163,8 @@ const styles = StyleSheet.create({
     }),
   },
   productImage: {
-    width: '100%',
-    height: 200,
+    width: 120,
+    height: 120,
     resizeMode: 'cover',
   },
   acceleratorBadge: {
@@ -166,6 +177,10 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     padding: 16,
+  },
+  productInfoNoImage: {
+    padding: 16,
+    flex: 1,
   },
   productName: {
     fontSize: 18,

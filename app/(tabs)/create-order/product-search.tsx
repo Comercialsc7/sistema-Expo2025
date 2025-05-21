@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image, ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Search, Diamond, Calendar, Heart } from 'lucide-react-native';
+import { ArrowLeft, Search, Calendar, Heart } from 'lucide-react-native';
 import Animated, { 
   SlideInUp,
   Layout,
@@ -12,6 +12,8 @@ import { useOrderStore } from '../../../store/useOrderStore';
 import { mockProducts, Product } from '../../../data/mocks';
 
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+
+const Diamond = require('../../../assets/images/diamond.png');
 
 export default function ProductSearch() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,12 +82,11 @@ export default function ProductSearch() {
             entering={SlideInUp.delay(index * 100).springify()}
             layout={Layout.springify()}
           >
-            <Image source={{ uri: product.image }} style={styles.productImage} />
             <View style={styles.productInfo}>
               <View style={styles.productHeader}>
                 <Text style={styles.productCode}>{product.code}</Text>
                 {product.isAccelerator && (
-                  <Diamond size={16} color="#003B71" fill="#003B71" />
+                  <Image source={Diamond} style={{ width: 30, height: 30 }} />
                 )}
               </View>
               <Text style={styles.productName}>{product.name}</Text>
@@ -174,12 +175,6 @@ const styles = StyleSheet.create({
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
       }
     }),
-  },
-  productImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 12,
   },
   productInfo: {
     flex: 1,

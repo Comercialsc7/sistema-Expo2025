@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
 import { router } from 'expo-router';
 import RNPickerSelect from 'react-native-picker-select';
+
+const logoDmuller = require('../assets/images/logoDmuller.png');
 
 const teams = [
   { label: 'Litoral M', value: 49 },
@@ -22,11 +24,7 @@ export default function Login() {
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <View style={styles.logoWrapper}>
-            <Text style={styles.logoText}>:DM</Text>
-            <Text style={styles.logoText}>üller</Text>
-          </View>
-          <Text style={styles.logoSubtext}>DISTRIBUIDORA</Text>
+          <Image source={logoDmuller} style={styles.logo} resizeMode="contain" />
         </View>
 
         <View style={styles.formContainer}>
@@ -81,23 +79,11 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 60,
+    marginBottom: 40,
   },
-  logoWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoText: {
-    color: '#FFFFFF',
-    fontSize: 48,
-    fontWeight: 'bold',
-    letterSpacing: -0.5,
-  },
-  logoSubtext: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    letterSpacing: 4,
-    marginTop: 8,
+  logo: {
+    width: 320,
+    height: 110,
   },
   formContainer: {
     flex: 1,

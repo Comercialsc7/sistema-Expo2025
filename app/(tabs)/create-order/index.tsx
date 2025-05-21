@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet } from 'react-native';
-import { ArrowLeft, Plus, Minus, Heart, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Plus, Minus, Trash2 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useOrderStore } from '../../../store/useOrderStore';
+
+const Diamond = require('../../../assets/images/diamond.png');
 
 export default function OrderSummary() {
   const { items: orderItems, removeItem, updateItemQuantity, client, paymentTerm } = useOrderStore();
@@ -57,11 +59,10 @@ export default function OrderSummary() {
         <View style={styles.itemsList}>
           {orderItems.map((item, idx) => (
             <View key={idx} style={styles.itemCard}>
-              <Image source={{ uri: item.image }} style={styles.itemImage} />
               <View style={styles.itemInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={styles.itemCode}>{item.id}</Text>
-                  {item.isAccelerator && <Heart size={16} color="#A259FF" fill="#A259FF" style={{ marginLeft: 4 }} />}
+                  {item.isAccelerator && <Image source={Diamond} style={{ width: 30, height: 30, marginLeft: 4 }} />}
                 </View>
                 <Text style={styles.itemName}>{item.name}</Text>
                 <Text style={styles.itemBox}>{item.box}</Text>
@@ -91,7 +92,7 @@ export default function OrderSummary() {
             <Text style={styles.summaryLabel}>Itens Aceleradores</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text style={[styles.summaryValue, { marginRight: 4 }]}>{aceleradores}</Text>
-              <Heart size={16} color="#A259FF" fill="#A259FF" />
+              <Image source={Diamond} style={{ width: 30, height: 30 }} />
             </View>
           </View>
           <View style={styles.summaryRow}>
@@ -183,12 +184,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
-  },
-  itemImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    marginRight: 10,
   },
   itemInfo: {
     flex: 1,

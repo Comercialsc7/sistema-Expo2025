@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, Image } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowLeft, Search, Diamond } from 'lucide-react-native';
+import { ArrowLeft, Search } from 'lucide-react-native';
 
 const mockProducts = [
   {
@@ -23,6 +23,8 @@ const mockProducts = [
     image: 'https://images.unsplash.com/photo-1570831739435-6601aa3fa4fb?w=200&h=200&fit=crop'
   },
 ];
+
+const Diamond = require('../../../assets/images/diamond.png');
 
 export default function AcceleratorManagement() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,10 +64,7 @@ export default function AcceleratorManagement() {
               styles.acceleratorIndicator,
               product.isAccelerator && styles.acceleratorActive
             ]}>
-              <Diamond 
-                size={24} 
-                color={product.isAccelerator ? '#FFFFFF' : '#003B71'} 
-              />
+              <Image source={Diamond} style={{ width: 30, height: 30 }} />
             </View>
           </TouchableOpacity>
         ))}

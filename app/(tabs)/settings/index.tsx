@@ -1,16 +1,29 @@
 import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView } from 'react-native';
 import { router } from 'expo-router';
-import { Image as ImageIcon, Package, Diamond, ChevronRight, Calendar, Building2 } from 'lucide-react-native';
+import { Image as ImageIcon, Package, ChevronRight, Calendar, Building2 } from 'lucide-react-native';
 import { useBannerStore } from '../../../store/useBannerStore';
+import { Image } from 'react-native';
+import { LucideIcon } from 'lucide-react-native';
 
-const settingsOptions = [
+const Diamond = require('../../../assets/images/diamond.png');
+
+interface SettingsOption {
+  id: string;
+  title: string;
+  description: string;
+  icon: LucideIcon | React.ReactNode;
+  route: string;
+  getCount?: () => number;
+}
+
+const settingsOptions: SettingsOption[] = [
   {
     id: 'banners',
-    title: 'Banners Promocionais',
-    description: 'Gerencie os banners do carrossel principal',
+    title: 'Banners',
+    description: 'Gerencie os banners da aplicação',
     icon: ImageIcon,
-    route: '/settings/banner-management',
-    getCount: (state: any) => state.banners?.length || 0,
+    route: '/(tabs)/settings/banner-management',
+    getCount: () => useBannerStore.getState().banners.length,
   },
   {
     id: 'brands',
@@ -24,8 +37,8 @@ const settingsOptions = [
     id: 'accelerators',
     title: 'Produtos Aceleradores',
     description: 'Configure os produtos com status de acelerador',
-    icon: Diamond,
-    route: '/settings/accelerator-management',
+    icon: <Image source={Diamond} style={{ width: 30, height: 30 }} />,
+    route: '/(tabs)/settings/accelerator-management',
     getCount: () => 8, // This would be dynamic once we have accelerator management
   },
   {

@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Platform } from 'react-native';
-import { Diamond, Upload, ArrowLeft } from 'lucide-react-native';
+import { Upload, ArrowLeft } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
+
+const Diamond = require('../../../assets/images/diamond.png');
 
 export default function ProductManagement() {
   const [productData, setProductData] = useState({
@@ -108,11 +110,7 @@ export default function ProductManagement() {
             style={[styles.acceleratorButton, productData.isAccelerator && styles.acceleratorButtonActive]}
             onPress={() => setProductData(prev => ({ ...prev, isAccelerator: !prev.isAccelerator }))}
           >
-            <Diamond 
-              size={32} 
-              color={productData.isAccelerator ? '#FFFFFF' : '#003B71'} 
-              strokeWidth={1.5}
-            />
+            <Image source={Diamond} style={{ width: 30, height: 30 }} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
