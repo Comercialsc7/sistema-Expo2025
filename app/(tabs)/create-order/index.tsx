@@ -56,81 +56,84 @@ export default function OrderSummary() {
         </TouchableOpacity>
       </View>
       <View style={styles.contentArea}>
-        <View style={styles.itemsList}>
-          {orderItems.map((item, idx) => (
-            <View key={idx} style={styles.itemCard}>
-              <View style={styles.itemInfo}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={styles.itemCode}>{item.id}</Text>
-                  {item.isAccelerator && <Image source={Diamond} style={{ width: 30, height: 30, marginLeft: 4 }} />}
+        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+          <View style={styles.itemsList}>
+            {orderItems.map((item, idx) => (
+              <View key={idx} style={styles.itemCard}>
+                <View style={styles.itemInfo}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={styles.itemCode}>{item.id}</Text>
+                    {item.isAccelerator && <Image source={Diamond} style={{ width: 30, height: 30, marginLeft: 4 }} />}
+                  </View>
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  <Text style={styles.itemBox}>{item.box}</Text>
+                  <Text style={styles.itemPrice}>R$ {item.price.toFixed(2)} <Text style={styles.itemDiscount}>-5%</Text></Text>
                 </View>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemBox}>{item.box}</Text>
-                <Text style={styles.itemPrice}>R$ {item.price.toFixed(2)} <Text style={styles.itemDiscount}>-5%</Text></Text>
-              </View>
-              <View style={styles.qtyControl}>
-                <TouchableOpacity onPress={() => handleQtyChange(idx, -1)}>
-                  <Minus size={18} color="#003B71" />
+                <View style={styles.qtyControl}>
+                  <TouchableOpacity onPress={() => handleQtyChange(idx, -1)}>
+                    <Minus size={18} color="#003B71" />
+                  </TouchableOpacity>
+                  <Text style={styles.qtyText}>{item.quantity}</Text>
+                  <TouchableOpacity onPress={() => handleQtyChange(idx, 1)}>
+                    <Plus size={18} color="#003B71" />
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity onPress={() => handleRemoveItem(idx)} style={{ marginLeft: 8 }}>
+                  <Trash2 size={20} color="#FF3B30" />
                 </TouchableOpacity>
-                <Text style={styles.qtyText}>{item.quantity}</Text>
-                <TouchableOpacity onPress={() => handleQtyChange(idx, 1)}>
-                  <Plus size={18} color="#003B71" />
-                </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => handleRemoveItem(idx)} style={{ marginLeft: 8 }}>
-                <Trash2 size={20} color="#FF3B30" />
-              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.summaryBox}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Subtotal</Text>
+              <Text style={styles.summaryValue}>R$ {subtotal.toFixed(2)}</Text>
             </View>
-          ))}
-        </View>
-        <View style={styles.summaryBox}>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Text style={styles.summaryValue}>R$ {subtotal.toFixed(2)}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Itens Aceleradores</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={[styles.summaryValue, { marginRight: 4 }]}>{aceleradores}</Text>
-              <Image source={Diamond} style={{ width: 30, height: 30 }} />
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Itens Aceleradores</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={[styles.summaryValue, { marginRight: 4 }]}>{aceleradores}</Text>
+                <Image source={Diamond} style={{ width: 30, height: 30 }} />
+              </View>
             </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Desconto</Text>
+              <Text style={[styles.summaryValue, { color: '#FF3B30' }]}>R$ {desconto.toFixed(2)}</Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={[styles.summaryRow, { marginBottom: 0 }]}> 
+              <Text style={styles.summaryTotalLabel}>Total</Text>
+              <Text style={styles.summaryTotalValue}>R$ {total.toFixed(2)}</Text>
+            </View>
+            <View style={styles.summaryPrazoRow}>
+              <Text style={styles.summaryPrazo}>Prazo de pagamento</Text>
+              <Text style={styles.summaryPrazoValor}>
+                {prazoDescricaoParam || paymentTerm?.description || 'Não definido'}
+              </Text>
+            </View>
+            
+            <TouchableOpacity
+              style={[styles.finishButton, !prazo && styles.finishButtonDisabled]} 
+              onPress={() => {
+                if (prazo) {
+                  router.push({
+                    pathname: '/(tabs)/create-order/complete',
+                    params: {
+                      subtotal: subtotal.toFixed(2),
+                      itens: orderItems.length,
+                      desconto: desconto.toFixed(2),
+                      total: total.toFixed(2),
+                      prazo: prazo,
+                    }
+                  });
+                }
+              }}
+              disabled={!prazo}
+            >
+              <Text style={styles.finishButtonText}>Finalizar Pedido</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Desconto</Text>
-            <Text style={[styles.summaryValue, { color: '#FF3B30' }]}>R$ {desconto.toFixed(2)}</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { fontWeight: 'bold' }]}>Total</Text>
-            <Text style={[styles.summaryValue, { fontWeight: 'bold' }]}>R$ {total.toFixed(2)}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Prazo de pagamento</Text>
-            <Text style={[styles.summaryValue, { color: '#003B71', fontWeight: 'bold' }]}>
-              {prazoDescricaoParam || paymentTerm?.description || 'Não definido'}
-            </Text>
-          </View>
-          <TouchableOpacity 
-            style={[styles.finishButton, !prazo && styles.finishButtonDisabled]} 
-            onPress={() => {
-              if (prazo) {
-                router.push({
-                  pathname: '/(tabs)/create-order/complete',
-                  params: {
-                    subtotal: subtotal.toFixed(2),
-                    itens: orderItems.length,
-                    desconto: desconto.toFixed(2),
-                    total: total.toFixed(2),
-                    prazo: prazo,
-                  }
-                });
-              }
-            }}
-            disabled={!prazo}
-          >
-            <Text style={styles.finishButtonText}>Finalizar Pedido</Text>
-          </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
     </View>
   );
@@ -254,19 +257,50 @@ const styles = StyleSheet.create({
     opacity: 0.3,
     marginVertical: 8,
   },
+  summaryTotalLabel: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  summaryTotalValue: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  summaryPrazoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  summaryPrazo: {
+    color: '#fff',
+    fontSize: 13,
+    opacity: 0.8,
+  },
+  summaryPrazoValor: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
   finishButton: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FCB32B',
     borderRadius: 12,
     marginTop: 12,
     paddingVertical: 12,
     alignItems: 'center',
+    width: '100%',
   },
   finishButtonText: {
-    color: '#003B71',
+    color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 17,
+    textTransform: 'uppercase',
   },
   finishButtonDisabled: {
     backgroundColor: '#CCCCCC',
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    justifyContent: 'space-between',
   },
 }); 

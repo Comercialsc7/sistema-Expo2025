@@ -1,17 +1,14 @@
 import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView } from 'react-native';
 import { router } from 'expo-router';
-import { Image as ImageIcon, Package, ChevronRight, Calendar, Building2 } from 'lucide-react-native';
+import { Image as ImageIcon, Package, ChevronRight, Calendar, Building2, Diamond } from 'lucide-react-native';
 import { useBannerStore } from '../../../store/useBannerStore';
-import { Image } from 'react-native';
 import { LucideIcon } from 'lucide-react-native';
-
-const Diamond = require('../../../assets/images/diamond.png');
 
 interface SettingsOption {
   id: string;
   title: string;
   description: string;
-  icon: LucideIcon | React.ReactNode;
+  icon: LucideIcon;
   route: string;
   getCount?: () => number;
 }
@@ -37,7 +34,7 @@ const settingsOptions: SettingsOption[] = [
     id: 'accelerators',
     title: 'Produtos Aceleradores',
     description: 'Configure os produtos com status de acelerador',
-    icon: <Image source={Diamond} style={{ width: 30, height: 30 }} />,
+    icon: Diamond,
     route: '/(tabs)/settings/accelerator-management',
     getCount: () => 8, // This would be dynamic once we have accelerator management
   },
@@ -67,7 +64,7 @@ export default function SettingsScreen() {
           <TouchableOpacity
             key={option.id}
             style={styles.optionCard}
-            onPress={() => router.push(option.route)}
+            onPress={() => router.push(option.route as any)}
           >
             <View style={styles.optionIcon}>
               <option.icon size={24} color="#003B71" />
@@ -78,7 +75,7 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.optionRight}>
               <View style={styles.countBadge}>
-                <Text style={styles.countText}>{option.getCount(bannerState)}</Text>
+                <Text style={styles.countText}>{option.getCount ? option.getCount() : 0}</Text>
               </View>
               <ChevronRight size={20} color="#666666" />
             </View>
