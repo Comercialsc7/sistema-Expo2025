@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { ArrowLeft, Plus, Minus, Trash2 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useOrderStore } from '../../../store/useOrderStore';
+import { useState } from 'react';
 
 const Diamond = require('../../../assets/images/diamond.png');
 
@@ -10,6 +11,9 @@ export default function OrderSummary() {
   const { items: orderItems, removeItem, updateItemQuantity, client, paymentTerm } = useOrderStore();
   const params = useLocalSearchParams();
   const prazoDescricaoParam = params.prazoDescricao as string | undefined;
+
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingItemQty, setEditingItemQty] = useState<string>('');
 
   // Cálculos dinâmicos
   const subtotal = useMemo(() => orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0), [orderItems]);
@@ -26,6 +30,23 @@ export default function OrderSummary() {
 
   const handleRemoveItem = (idx: number) => {
     removeItem(idx);
+  };
+
+  const handleEditQuantity = (item: any) => {
+    setEditingItemId(item.id);
+    setEditingItemQty(item.quantity.toString());
+  };
+
+  const handleSaveQuantity = (item: any) => {
+    const newQty = parseInt(editingItemQty, 10);
+    if (!isNaN(newQty) && newQty >= 1) {
+      const itemIndex = orderItems.findIndex(orderItem => orderItem.id === item.id);
+      if (itemIndex !== -1) {
+        updateItemQuantity(itemIndex, newQty);
+      }
+    }
+    setEditingItemId(null);
+    setEditingItemQty('');
   };
 
   return (
@@ -73,7 +94,20 @@ export default function OrderSummary() {
                   <TouchableOpacity onPress={() => handleQtyChange(idx, -1)}>
                     <Minus size={18} color="#003B71" />
                   </TouchableOpacity>
-                  <Text style={styles.qtyText}>{item.quantity}</Text>
+                  {editingItemId === item.id ? (
+                    <TextInput
+                      style={styles.qtyInput}
+                      keyboardType="number-pad"
+                      value={editingItemQty}
+                      onChangeText={setEditingItemQty}
+                      onBlur={() => handleSaveQuantity(item)}
+                      autoFocus
+                    />
+                  ) : (
+                    <TouchableOpacity onPress={() => handleEditQuantity(item)}>
+                      <Text style={styles.qtyText}>{item.quantity}</Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity onPress={() => handleQtyChange(idx, 1)}>
                     <Plus size={18} color="#003B71" />
                   </TouchableOpacity>
@@ -228,6 +262,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginHorizontal: 8,
     color: '#003B71',
+  },
+  qtyInput: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginHorizontal: 8,
+    color: '#003B71',
+    minWidth: 40,
+    textAlign: 'center',
+    paddingVertical: 0,
   },
   summaryBox: {
     backgroundColor: '#003B71',
