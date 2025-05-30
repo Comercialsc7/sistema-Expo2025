@@ -17,7 +17,7 @@ export default function Login() {
   const [selectedTeam, setSelectedTeam] = useState<number | undefined>(undefined);
 
   const handleLogin = () => {
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/orders');
   };
 
   return (

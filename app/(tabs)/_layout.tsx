@@ -1,62 +1,11 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { Tabs, router } from 'expo-router';
-import { Menu, Chrome as Home, Users, Package, Settings, LogOut } from 'lucide-react-native';
-import { Sidebar, MenuItem } from '../../components/shared/Sidebar';
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
+import { Tabs } from 'expo-router';
+import { Chrome as Home, Users, Package, Settings } from 'lucide-react-native';
 
 export default function TabLayout() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const menuItems: MenuItem[] = [
-    { 
-      title: 'Pedidos',
-      route: '/(tabs)/orders',
-      icon: Home
-    },
-    { 
-      title: 'Clientes',
-      route: '/(tabs)/clients',
-      icon: Users
-    },
-    { 
-      title: 'Produtos',
-      route: '/(tabs)/products',
-      icon: Package
-    },
-    { 
-      title: 'Configurações',
-      route: '/(tabs)/settings',
-      icon: Settings
-    },
-    { 
-      title: 'Sair',
-      route: '/login',
-      icon: LogOut,
-      color: '#FF3B30'
-    },
-  ];
-
-  const handleNavigation = (route: string) => {
-    router.push(route as any);
-    setIsOpen(false);
-  };
-
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.menuButton} 
-        onPress={() => setIsOpen(true)}
-      >
-        <Menu size={24} color="#003B71" />
-      </TouchableOpacity>
-
-      <Sidebar 
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        onNavigate={handleNavigation}
-        menuItems={menuItems}
-      />
-
       <View style={styles.main}>
         <Tabs
           screenOptions={{
@@ -69,7 +18,7 @@ export default function TabLayout() {
           <Tabs.Screen
             name="orders"
             options={{
-              title: 'Pedidos',
+              title: 'Página Inicial',
               tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
             }}
           />
@@ -107,31 +56,5 @@ const styles = StyleSheet.create({
   },
   main: {
     flex: 1,
-  },
-  menuButton: {
-    position: 'absolute',
-    top: Platform.OS === 'web' ? 16 : 48,
-    left: 16,
-    zIndex: 1,
-    width: 40,
-    height: 40,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#003B71',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0 4px 14px rgba(0, 59, 113, 0.2)',
-      }
-    }),
   },
 });

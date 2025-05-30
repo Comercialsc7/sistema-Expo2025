@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Platform, Dimensions } from 'react-native';
-import { Share2 } from 'lucide-react-native';
+import { Share2, Menu, Chrome as Home, Users, Package, Settings, LogOut } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { MovingBorderButton } from '../../components/ui/moving-border';
+import { MovingBorderButton } from '../../../components/ui/moving-border';
 import Animated, { 
   useAnimatedStyle, 
   withTiming, 
@@ -10,7 +10,8 @@ import Animated, {
   withSequence,
   withDelay
 } from 'react-native-reanimated';
-import { useBannerStore } from '../../store/useBannerStore';
+import { useBannerStore } from '../../../store/useBannerStore';
+import { Sidebar, MenuItem } from '../../../components/shared/Sidebar';
 
 const mockBrands = [
   { 
@@ -137,11 +138,46 @@ const mockProducts = [
 export default function OrdersScreen() {
   const { banners } = useBannerStore();
   const [currentBanner, setCurrentBanner] = useState(0);
+  const [isOpen, setIsOpen] = useState(false);
   const fadeAnim = useSharedValue(1);
   const screenWidth = Dimensions.get('window').width;
 
+  const menuItems: MenuItem[] = [
+    { 
+      title: 'Página Inicial',
+      route: '/(tabs)/orders',
+      icon: Home
+    },
+    { 
+      title: 'Clientes',
+      route: '/(tabs)/clients',
+      icon: Users
+    },
+    { 
+      title: 'Produtos',
+      route: '/(tabs)/products',
+      icon: Package
+    },
+    { 
+      title: 'Configurações',
+      route: '/(tabs)/settings',
+      icon: Settings
+    },
+    { 
+      title: 'Sair',
+      route: '/login',
+      icon: LogOut,
+      color: '#FF3B30'
+    },
+  ];
+
+  const handleNavigation = (route: string) => {
+    router.push(route as any);
+    setIsOpen(false);
+  };
+
   useEffect(() => {
-    if (banners.length === 0) return;
+    if (!banners || banners.length === 0) return;
 
     const interval = setInterval(() => {
       fadeAnim.value = withSequence(
@@ -152,7 +188,7 @@ export default function OrdersScreen() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [banners.length]);
+  }, [banners]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: fadeAnim.value,
@@ -168,6 +204,20 @@ export default function OrdersScreen() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity 
+        style={styles.menuButton} 
+        onPress={() => setIsOpen(true)}
+      >
+        <Menu size={24} color="#003B71" />
+      </TouchableOpacity>
+
+      <Sidebar 
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        onNavigate={handleNavigation}
+        menuItems={menuItems}
+      />
+
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity style={styles.shareButton}>
@@ -176,12 +226,12 @@ export default function OrdersScreen() {
         </View>
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeText}>Bem-vindo</Text>
-          <Text style={styles.userName}>João</Text>
+          <Text style={styles.userName}>Vendedor</Text>
         </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {banners.length > 0 && (
+        {banners && banners.length > 0 && banners[currentBanner] && (
           <Animated.View style={[styles.bannerContainer, animatedStyle]}>
             <Image
               source={{ uri: banners[currentBanner].image }}
@@ -227,7 +277,7 @@ export default function OrdersScreen() {
               <TouchableOpacity 
                 key={brand.id} 
                 style={styles.brandItem}
-                onPress={() => router.push(`/brands/${brand.id}`)}
+                onPress={() => router.push('/brands' as any)}
               >
                 <Image 
                   source={{ uri: brand.image }} 
@@ -248,30 +298,60 @@ export default function OrdersScreen() {
               />
               <Text style={styles.sectionTitle}>Itens Aceleradores</Text>
             </View>
+            <TouchableOpacity 
+              style={styles.viewAllButton} 
+              onPress={() => router.push('/(tabs)/products' as any)}
+            >
+              <Text style={styles.viewAllText}>Ver todos</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.productsGrid}>
-            {mockProducts.map((product) => (
-              <View key={product.id} style={styles.productCard}>
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountText}>{product.discount}%</Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.productsScroll}
+          >
+            {mockProducts.slice(0, 6).map((product) => (
+              <TouchableOpacity 
+                key={product.id} 
+                style={styles.productItem}
+                onPress={() => router.push('/(tabs)/products' as any)}
+              >
+                <Image 
+                  source={{ uri: product.image }} 
+                  style={styles.productImage}
+                />
+                <View style={styles.productInfo}>
+                  <Text style={styles.productName}>{product.name}</Text>
+                  <View style={styles.priceContainer}>
+                    <Text style={styles.productPrice}>
+                      R$ {product.price.toFixed(2)}
+                    </Text>
+                    {product.discount > 0 && (
+                      <View style={styles.discountBadge}>
+                        <Text style={styles.discountText}>
+                          -{product.discount}%
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.productQuantity}>
+                    {product.quantity} unidades
+                  </Text>
                 </View>
-                <Image source={{ uri: product.image }} style={styles.productImage} />
-                <Text style={styles.productPrice}>
-                  R$ {product.price.toFixed(2)}
-                </Text>
-                <Text style={styles.productName}>{product.name}</Text>
-                <Text style={styles.productQuantity}>Cx {product.quantity} unds.</Text>
-              </View>
+              </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
+        </View>
+
+        <View style={styles.orderButtonContainer}>
+          <MovingBorderButton
+            onPress={handleOrder}
+            style={styles.orderButton}
+          >
+            <Text style={styles.orderButtonText}>Fazer Pedido</Text>
+          </MovingBorderButton>
         </View>
       </ScrollView>
-
-      <View style={styles.orderButtonContainer}>
-        <MovingBorderButton onPress={handleOrder}>
-          Fazer Pedido
-        </MovingBorderButton>
-      </View>
     </View>
   );
 }
@@ -281,32 +361,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
-  header: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 48,
-    paddingBottom: 16,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 16,
-  },
-  welcomeContainer: {
-    alignItems: 'center',
-  },
-  welcomeText: {
-    fontSize: 14,
-    color: '#666666',
-    fontFamily: 'Montserrat-Regular',
-  },
-  userName: {
-    fontSize: 16,
-    color: '#000000',
-    fontFamily: 'Montserrat-Bold',
-    marginTop: 4,
-  },
-  shareButton: {
+  menuButton: {
+    position: 'absolute',
+    top: Platform.OS === 'web' ? 16 : 48,
+    left: 16,
+    zIndex: 1,
     width: 40,
     height: 40,
     backgroundColor: '#FFFFFF',
@@ -328,12 +387,43 @@ const styles = StyleSheet.create({
       }
     }),
   },
+  header: {
+    paddingTop: Platform.OS === 'web' ? 16 : 48,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 16,
+  },
+  shareButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  welcomeContainer: {
+    marginBottom: 8,
+  },
+  welcomeText: {
+    fontSize: 16,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+  },
+  userName: {
+    fontSize: 24,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
+  },
   bannerContainer: {
-    height: 200,
     margin: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
-    position: 'relative',
+    height: 200,
   },
   bannerImage: {
     width: '100%',
@@ -346,7 +436,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   bannerTitle: {
     fontSize: 24,
@@ -361,8 +450,8 @@ const styles = StyleSheet.create({
   },
   bannerIndicators: {
     position: 'absolute',
-    bottom: 12,
-    right: 12,
+    bottom: 16,
+    right: 16,
     flexDirection: 'row',
     gap: 8,
   },
@@ -370,7 +459,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FFFFFF',
   },
   brandsSection: {
     marginBottom: 24,
@@ -380,52 +468,42 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  titleIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 8,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    color: '#000000',
+    fontSize: 20,
+    color: '#003B71',
     fontFamily: 'Montserrat-Bold',
   },
   viewAllButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    padding: 8,
   },
   viewAllText: {
     fontSize: 14,
-    color: '#0088CC',
+    color: '#003B71',
     fontFamily: 'Montserrat-Medium',
   },
   brandsScroll: {
     paddingLeft: 16,
   },
   brandItem: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 16,
+    width: 120,
+    height: 80,
     backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    marginRight: 16,
     padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: '#000000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
       },
       android: {
-        elevation: 2,
+        elevation: 4,
       },
       web: {
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
@@ -437,76 +515,94 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   productsSection: {
-    flex: 1,
-    paddingHorizontal: 16,
+    marginBottom: 24,
   },
-  productsGrid: {
+  titleContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    gap: 16,
+    alignItems: 'center',
+    gap: 8,
   },
-  productCard: {
-    width: Platform.OS === 'web' ? 'calc(33.33% - 11px)' : 'calc(50% - 8px)',
+  titleIcon: {
+    width: 24,
+    height: 24,
+  },
+  productsScroll: {
+    paddingLeft: 16,
+  },
+  productItem: {
+    width: 160,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 8,
+    marginRight: 16,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: '#000000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowRadius: 4,
       },
       android: {
         elevation: 4,
       },
       web: {
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
       }
     }),
   },
-  discountBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#FF3B30',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    zIndex: 1,
-  },
-  discountText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontFamily: 'Montserrat-Bold',
-  },
   productImage: {
     width: '100%',
-    aspectRatio: 1,
-    borderRadius: 8,
-    marginBottom: 8,
+    height: 160,
   },
-  productPrice: {
-    fontSize: 16,
-    color: '#000000',
-    marginBottom: 4,
-    fontFamily: 'Montserrat-Bold',
+  productInfo: {
+    padding: 12,
   },
   productName: {
     fontSize: 14,
-    color: '#666666',
+    color: '#003B71',
+    fontFamily: 'Montserrat-Medium',
+    marginBottom: 8,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 4,
-    fontFamily: 'Montserrat-Regular',
+  },
+  productPrice: {
+    fontSize: 16,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
+  },
+  discountBadge: {
+    backgroundColor: '#FF3B30',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  discountText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontFamily: 'Montserrat-Bold',
   },
   productQuantity: {
     fontSize: 12,
-    color: '#999999',
+    color: '#666666',
     fontFamily: 'Montserrat-Regular',
   },
   orderButtonContainer: {
     padding: 16,
-    backgroundColor: '#F5F5F5',
+    marginBottom: 24,
   },
-});
+  orderButton: {
+    backgroundColor: '#003B71',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+  },
+  orderButtonText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontFamily: 'Montserrat-Bold',
+  },
+}); 

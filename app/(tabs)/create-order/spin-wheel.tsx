@@ -30,20 +30,32 @@ export default function SpinWheelScreen() {
   }, [selected, capturedImage]);
 
   const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permissão Negada', 'Precisamos da permissão da câmera para tirar fotos.');
-      return;
-    }
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão Negada', 'Precisamos da permissão da câmera para tirar fotos.');
+        return;
+      }
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: false,
-      aspect: [4, 3],
-      quality: 1,
-    });
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+        base64: true,
+        exif: false,
+      });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setCapturedImage(result.assets[0].uri);
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const photoUri = result.assets[0].uri;
+        if (photoUri) {
+          setCapturedImage(photoUri);
+        } else {
+          Alert.alert('Erro', 'Não foi possível capturar a foto. Tente novamente.');
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao capturar foto:', error);
+      Alert.alert('Erro', 'Ocorreu um erro ao capturar a foto. Tente novamente.');
     }
   };
 
