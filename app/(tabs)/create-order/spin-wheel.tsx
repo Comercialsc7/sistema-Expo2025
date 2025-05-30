@@ -6,11 +6,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSpinResultsStore } from '../../../store/useSpinResultsStore';
 
 const premios = [
-  'Alexa Echo Pop',
-  'Smartwatch',
-  'Caixinha de Som',
-  'AirFryer',
-  'Cafeteira Dolce Gusto',
+  'Fritadeira Inox',
+  'Headphone JBL 520BT',
+  'JBL Go Essential',
+  'Multiprocessador Alimentos 4 em 1',
 ];
 
 export default function SpinWheelScreen() {
@@ -73,7 +72,7 @@ export default function SpinWheelScreen() {
       });
     } else {
       router.push({
-        pathname: '/(tabs)/create-order/complete',
+        pathname: '/(tabs)/create-order/collect-email',
         params: { 
           subtotal: params.subtotal,
           itens: params.itens,
