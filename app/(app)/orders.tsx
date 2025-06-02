@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Platform, Dimensions } from 'react-native';
 import { Share2, Menu, Chrome as Home, Users, Package, Settings, LogOut } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { MovingBorderButton } from '../../../components/ui/moving-border';
+import { MovingBorderButton } from '../../components/ui/moving-border';
 import Animated, { 
   useAnimatedStyle, 
   withTiming, 
@@ -10,8 +10,8 @@ import Animated, {
   withSequence,
   withDelay
 } from 'react-native-reanimated';
-import { useBannerStore } from '../../../store/useBannerStore';
-import { Sidebar, MenuItem } from '../../../components/shared/Sidebar';
+import { useBannerStore } from '../../store/useBannerStore';
+import { Sidebar, MenuItem } from '../../components/shared/Sidebar';
 
 const mockBrands = [
   { 

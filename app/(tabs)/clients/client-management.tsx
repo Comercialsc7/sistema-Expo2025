@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { useNavigation } from '../../../hooks/useNavigation';
 
 export default function ClientManagement() {
   const [clientData, setClientData] = useState({
@@ -11,15 +11,17 @@ export default function ClientManagement() {
     cnpj: '',
   });
 
+  const { goBack } = useNavigation();
+
   const handleSave = () => {
     console.log('Client data:', clientData);
-    router.back();
+    goBack();
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={goBack} style={styles.backButton}>
           <ArrowLeft size={24} color="#003B71" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Cadastro de Cliente</Text>

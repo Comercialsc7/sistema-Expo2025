@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView } from 'react-native';
-import { Search, Plus } from 'lucide-react-native';
+import { Search, Plus, ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { mockClients } from '../../../data/mocks';
+import { useNavigation } from '../../../hooks/useNavigation';
 
 export default function ClientManagement() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { goBack, navigateTo } = useNavigation();
 
   const filteredClients = mockClients.filter(client =>
     Object.values(client).some(value =>
@@ -14,12 +16,15 @@ export default function ClientManagement() {
   );
 
   const handleAddClient = () => {
-    router.push('/clients/client-management');
+    navigateTo('/clients/client-management');
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={goBack} style={styles.backButton}>
+          <ArrowLeft size={24} color="#003B71" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Clientes</Text>
         <TouchableOpacity style={styles.addButton} onPress={handleAddClient}>
           <Plus size={24} color="#FFFFFF" />
@@ -76,6 +81,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
     marginLeft: Platform.OS === 'web' ? 56 : 0,
+  },
+  backButton: {
+    marginRight: 16,
   },
   headerTitle: {
     fontSize: 24,

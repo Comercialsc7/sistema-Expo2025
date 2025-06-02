@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView } from 'react-native';
-import { router } from 'expo-router';
 import { ArrowLeft, Search, Building2 } from 'lucide-react-native';
 import { useOrderStore } from '../../../store/useOrderStore';
 import { mockClients, Client } from '../../../data/mocks';
+import { useNavigation } from '../../../hooks/useNavigation';
 
 export default function SelectClient() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { goBack, navigateTo } = useNavigation();
 
   const filteredClients = mockClients.filter(client =>
     Object.values(client).some(value =>
@@ -16,19 +17,16 @@ export default function SelectClient() {
 
   const handleSelectClient = (client: Client) => {
     useOrderStore.getState().setClient(client);
-    router.push({
-      pathname: '/(tabs)/create-order/payment-method',
-      params: { 
-        clientId: client.id,
-        clientName: client.name
-      }
+    navigateTo('/(tabs)/create-order/payment-method', { 
+      clientId: client.id,
+      clientName: client.name
     });
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={goBack} style={styles.backButton}>
           <ArrowLeft size={24} color="#003B71" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Selecionar Cliente</Text>

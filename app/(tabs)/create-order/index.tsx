@@ -4,11 +4,13 @@ import { ArrowLeft, Plus, Minus, Trash2 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useOrderStore } from '../../../store/useOrderStore';
 import { useState } from 'react';
+import { useNavigation } from '../../../hooks/useNavigation';
 
 const Diamond = require('../../../assets/images/diamond.png');
 
 export default function OrderSummary() {
   const { items: orderItems, removeItem, updateItemQuantity, client, paymentTerm } = useOrderStore();
+  const { goBack, navigateTo } = useNavigation();
   const params = useLocalSearchParams();
   const prazoDescricaoParam = params.prazoDescricao as string | undefined;
 
@@ -52,7 +54,7 @@ export default function OrderSummary() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={goBack} style={styles.backButton}>
           <ArrowLeft size={24} color="#003B71" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Pedido</Text>
@@ -60,16 +62,13 @@ export default function OrderSummary() {
           style={styles.addButton}
           onPress={() => {
             if (client && paymentTerm) {
-              router.push({
-                pathname: '/(tabs)/create-order/product-search',
-                params: {
-                  clientId: client.id,
-                  clientName: client.name,
-                  paymentTermId: paymentTerm.id
-                }
+              navigateTo('/(tabs)/create-order/product-search', {
+                clientId: client.id,
+                clientName: client.name,
+                paymentTermId: paymentTerm.id
               });
             } else {
-              router.push('/(tabs)/create-order/select-client');
+              navigateTo('/(tabs)/create-order/select-client');
             }
           }}
         >

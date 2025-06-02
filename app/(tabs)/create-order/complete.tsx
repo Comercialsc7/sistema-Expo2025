@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
 import { MoreVertical } from 'lucide-react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { useRouter } from 'expo-router';
 import { useSpinResultsStore } from '../../../store/useSpinResultsStore';
+import { useNavigation } from '../../../hooks/useNavigation';
 
 interface SpinResult {
   prize: string;
@@ -14,6 +14,7 @@ const Diamond = require('../../../assets/images/diamond.png');
 
 export default function FinalizarPedido() {
   const params = useLocalSearchParams();
+  const { goBack, navigateTo } = useNavigation();
   const subtotal = Number(params.subtotal) || 0;
   const itens = Number(params.itens) || 0;
   const desconto = Number(params.desconto) || 0;
@@ -27,8 +28,6 @@ export default function FinalizarPedido() {
   const girosRestantes = girosGanhos - results.length;
 
   const faltaGiro = 3000 - (total % 3000) || 0;
-
-  const router = useRouter();
 
   useEffect(() => {
     return () => {
@@ -112,23 +111,20 @@ export default function FinalizarPedido() {
           </View>
           <Text style={styles.remainingDesc}>para você concorrer{"\n"}a uma moto 0km</Text>
           
-          <TouchableOpacity style={styles.addButton} onPress={() => router.back()}> {/* Botão Adicionar mais itens */}
+          <TouchableOpacity style={styles.addButton} onPress={goBack}>
             <Text style={styles.addButtonText}>Adicionar mais itens</Text>
           </TouchableOpacity>
 
           {/* Botão Girar Roleta (aparece se tiver giros restantes) */}
           {girosRestantes > 0 && ( 
-            <TouchableOpacity style={styles.spinButton} onPress={() => router.push({
-              pathname: '/(tabs)/create-order/spin-wheel',
-              params: { 
-                girosDisponiveis: girosRestantes, // Passar giros restantes para a tela de roleta
-                subtotal: subtotal,
-                itens: itens,
-                desconto: desconto,
-                total: total,
-                prazo: prazo,
-                girosGanhosInicial: girosGanhos // Opcional: passar total de giros ganhos se necessário
-              }
+            <TouchableOpacity style={styles.spinButton} onPress={() => navigateTo('/(tabs)/create-order/spin-wheel', { 
+              girosDisponiveis: girosRestantes,
+              subtotal: subtotal,
+              itens: itens,
+              desconto: desconto,
+              total: total,
+              prazo: prazo,
+              girosGanhosInicial: girosGanhos
             })}>
               <Text style={styles.spinButtonText}>Girar Roleta</Text>
             </TouchableOpacity>
@@ -136,7 +132,7 @@ export default function FinalizarPedido() {
 
           {/* Botão Finalizar Pedido (aparece se não tiver giros restantes) */}
           {girosRestantes === 0 && ( 
-            <TouchableOpacity style={styles.finishButton} onPress={() => router.push('/(tabs)') }> {/* Lógica de finalizar pedido - AGORA RETORNA PARA A PÁGINA PRINCIPAL */}
+            <TouchableOpacity style={styles.finishButton} onPress={() => navigateTo('/(tabs)')}>
                <Text style={styles.finishButtonText}>Finalizar Pedido</Text>
             </TouchableOpacity>
           )}

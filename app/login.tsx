@@ -17,7 +17,8 @@ export default function Login() {
   const [selectedTeam, setSelectedTeam] = useState<number | undefined>(undefined);
 
   const handleLogin = () => {
-    router.replace('/(tabs)/orders');
+    // Adicione aqui a lógica de autenticação, se houver
+    router.replace('/(app)/orders'); // Navega para a tela de Pedidos após o login
   };
 
   return (
