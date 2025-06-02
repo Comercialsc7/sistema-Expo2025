@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-interface OrderItem {
+export interface OrderItem {
   id: string;
   name: string;
   box: string;
@@ -16,7 +16,7 @@ interface OrderItem {
   };
 }
 
-interface Client {
+export interface Client {
   id: string;
   name: string;
   code: string;
@@ -24,7 +24,7 @@ interface Client {
   address: string;
 }
 
-interface PaymentTerm {
+export interface PaymentTerm {
   id: string;
   days: number;
   description: string;

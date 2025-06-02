@@ -73,7 +73,7 @@ export default function OrderConfirmation() {
 
         <TouchableOpacity 
           style={styles.button}
-          onPress={() => router.replace('/(tabs)/orders')}
+          onPress={() => router.replace('/(app)/orders')}
         >
           <Text style={styles.buttonText}>Voltar ao Início</Text>
         </TouchableOpacity>

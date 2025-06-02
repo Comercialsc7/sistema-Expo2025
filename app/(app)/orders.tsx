@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useBannerStore } from '../../store/useBannerStore';
 import { Sidebar, MenuItem } from '../../components/shared/Sidebar';
+import { useNavigation } from '../../hooks/useNavigation';
 
 const mockBrands = [
   { 
@@ -141,6 +142,7 @@ export default function OrdersScreen() {
   const [isOpen, setIsOpen] = useState(false);
   const fadeAnim = useSharedValue(1);
   const screenWidth = Dimensions.get('window').width;
+  const { navigateTo } = useNavigation();
 
   const menuItems: MenuItem[] = [
     { 
@@ -172,7 +174,7 @@ export default function OrdersScreen() {
   ];
 
   const handleNavigation = (route: string) => {
-    router.push(route as any);
+    navigateTo(route);
     setIsOpen(false);
   };
 
@@ -195,11 +197,15 @@ export default function OrdersScreen() {
   }));
 
   const handleViewAllBrands = () => {
-    router.push('/brands');
+    navigateTo('/brands' as any);
   };
 
   const handleOrder = () => {
-    router.push('/(tabs)/create-order/select-client');
+    navigateTo('/(tabs)/create-order/select-client');
+  };
+
+  const handleSyncPress = () => {
+    navigateTo('/sync-orders');
   };
 
   return (
@@ -220,7 +226,7 @@ export default function OrdersScreen() {
 
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <TouchableOpacity style={styles.shareButton}>
+          <TouchableOpacity style={styles.shareButton} onPress={handleSyncPress}>
             <Share2 size={24} color="#003B71" />
           </TouchableOpacity>
         </View>
@@ -277,7 +283,7 @@ export default function OrdersScreen() {
               <TouchableOpacity 
                 key={brand.id} 
                 style={styles.brandItem}
-                onPress={() => router.push('/brands' as any)}
+                onPress={() => navigateTo('/brands' as any)}
               >
                 <Image 
                   source={{ uri: brand.image }} 
@@ -300,7 +306,7 @@ export default function OrdersScreen() {
             </View>
             <TouchableOpacity 
               style={styles.viewAllButton} 
-              onPress={() => router.push('/(tabs)/products' as any)}
+              onPress={() => navigateTo('/(tabs)/products' as any)}
             >
               <Text style={styles.viewAllText}>Ver todos</Text>
             </TouchableOpacity>
@@ -314,7 +320,7 @@ export default function OrdersScreen() {
               <TouchableOpacity 
                 key={product.id} 
                 style={styles.productItem}
-                onPress={() => router.push('/(tabs)/products' as any)}
+                onPress={() => navigateTo('/(tabs)/products' as any)}
               >
                 <Image 
                   source={{ uri: product.image }} 

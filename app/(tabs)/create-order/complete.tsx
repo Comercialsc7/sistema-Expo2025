@@ -4,6 +4,8 @@ import { MoreVertical } from 'lucide-react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSpinResultsStore } from '../../../store/useSpinResultsStore';
 import { useNavigation } from '../../../hooks/useNavigation';
+import { useOrderStore } from '../../../store/useOrderStore';
+import { useCachedOrdersStore } from '../../../store/useCachedOrdersStore';
 
 interface SpinResult {
   prize: string;
@@ -15,6 +17,10 @@ const Diamond = require('../../../assets/images/diamond.png');
 export default function FinalizarPedido() {
   const params = useLocalSearchParams();
   const { goBack, navigateTo } = useNavigation();
+  const { items: orderItems, client, paymentTerm, clearOrder } = useOrderStore();
+  const { addCachedOrder } = useCachedOrdersStore();
+  const { results, clearResults } = useSpinResultsStore();
+
   const subtotal = Number(params.subtotal) || 0;
   const itens = Number(params.itens) || 0;
   const desconto = Number(params.desconto) || 0;
@@ -22,16 +28,32 @@ export default function FinalizarPedido() {
   const prazo = Number(params.prazo) || 0;
   const faltaMoto = 5000 - (total % 5000) || 0;
 
-  // Calcular giros ganhos e giros restantes
   const girosGanhos = Math.floor(total / 3000);
-  const { results, clearResults } = useSpinResultsStore();
   const girosRestantes = girosGanhos - results.length;
-
   const faltaGiro = 3000 - (total % 3000) || 0;
+
+  const handleFinalizeOrder = () => {
+    if (!client || !paymentTerm || orderItems.length === 0) {
+      console.log("Pedido incompleto. Não pode finalizar.");
+      return;
+    }
+
+    const orderToCache = {
+      id: Date.now().toString(),
+      items: orderItems,
+      client: client,
+      paymentTerm: paymentTerm,
+      timestamp: new Date().toISOString(),
+    };
+
+    addCachedOrder(orderToCache);
+    clearOrder();
+
+    navigateTo('/sync-orders');
+  };
 
   useEffect(() => {
     return () => {
-      // Limpar os resultados da store ao sair da tela de finalizar pedido
       clearResults();
     };
   }, []);
@@ -68,7 +90,7 @@ export default function FinalizarPedido() {
             </View>
           </View>
           {/* Bonus Section */}
-          {girosGanhos > 0 && ( // Mostrar a caixa de giros ganhos apenas se houver giros
+          {girosGanhos > 0 && (
             <View style={styles.bonusBox}>
               <Image source={Diamond} style={[styles.diamondIcon, styles.diamondLeft]} />
               {girosRestantes > 0 ? (
@@ -96,7 +118,7 @@ export default function FinalizarPedido() {
           )}
 
           {/* Novo label: quanto falta para o próximo giro da sorte */}
-          {girosRestantes === 0 && faltaGiro > 0 && ( // Mostrar apenas se usou todos os giros e falta para o próximo
+          {girosRestantes === 0 && faltaGiro > 0 && (
              <View style={styles.giroLabelBox}>
               <Text style={styles.giroLabelText}>Faltam <Text style={styles.giroLabelValue}>R$ {faltaGiro.toFixed(2)}</Text> para o próximo giro da sorte</Text>
             </View>
@@ -132,7 +154,10 @@ export default function FinalizarPedido() {
 
           {/* Botão Finalizar Pedido (aparece se não tiver giros restantes) */}
           {girosRestantes === 0 && ( 
-            <TouchableOpacity style={styles.finishButton} onPress={() => navigateTo('/(tabs)')}>
+            <TouchableOpacity 
+              style={styles.finishButton} 
+              onPress={handleFinalizeOrder}
+            >
                <Text style={styles.finishButtonText}>Finalizar Pedido</Text>
             </TouchableOpacity>
           )}
@@ -148,8 +173,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#003B71',
   },
   scrollViewContent: {
-    flexGrow: 1, // Permite que o conteúdo cresça
-    justifyContent: 'space-between', // Distribui o espaço verticalmente
+    flexGrow: 1,
+    justifyContent: 'space-between',
   },
   topSection: {
     backgroundColor: '#1560A8',
