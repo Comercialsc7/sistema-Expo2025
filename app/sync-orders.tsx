@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList, ActivityIndicator, Alert, Modal, Image } from 'react-native';
 import { useNavigation } from '../hooks/useNavigation';
-import { ArrowLeft, ArrowUp, ArrowDown, CheckCircle, XCircle, Package, Calendar, Gift } from 'lucide-react-native';
+import { ArrowLeft, ArrowUp, ArrowDown, CircleCheck as CheckCircle, Circle as XCircle, Package, Calendar, Gift } from 'lucide-react-native';
 import { useCachedOrdersStore, CachedOrder } from '../store/useCachedOrdersStore';
 
 export default function SyncOrdersScreen() {
