@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { OrderItem, Client, PaymentTerm } from './useOrderStore'; // Importa as definições necessárias
+import { OrderItem, Client, PaymentTerm } from './useOrderStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 export interface CachedOrder {
   id: string;
@@ -17,23 +18,45 @@ export interface CachedOrder {
     description: string;
     photo?: string;
   };
-  // Adicionar outros campos se necessário
 }
 
 interface CachedOrdersState {
-  cachedOrders: CachedOrder[]; // Usar a nova interface CachedOrder
-  _hasHydrated: boolean; // Adicionar estado para controle de hidratação
-  addCachedOrder: (order: CachedOrder) => void; // Aceitar CachedOrder
+  cachedOrders: CachedOrder[];
+  _hasHydrated: boolean;
+  addCachedOrder: (order: CachedOrder) => void;
   clearCachedOrders: () => void;
   getOrderById: (id: string) => CachedOrder | undefined;
-  setHasHydrated: (state: boolean) => void; // Adicionar ação para atualizar o estado de hidratação
+  setHasHydrated: (state: boolean) => void;
 }
+
+// Create a dummy storage for SSR
+const createNoopStorage = () => {
+  return {
+    getItem: () => Promise.resolve(null),
+    setItem: () => Promise.resolve(),
+    removeItem: () => Promise.resolve(),
+  };
+};
+
+// Get the appropriate storage mechanism
+const getStorage = () => {
+  if (Platform.OS === 'web') {
+    // Check if we're in a browser environment
+    if (typeof window !== 'undefined') {
+      return createJSONStorage(() => localStorage);
+    }
+    // If we're not in a browser (SSR), use noop storage
+    return createJSONStorage(() => createNoopStorage());
+  }
+  // For React Native, use AsyncStorage
+  return createJSONStorage(() => AsyncStorage);
+};
 
 export const useCachedOrdersStore = create<CachedOrdersState>()(
   persist(
     (set, get) => ({
       cachedOrders: [],
-      _hasHydrated: false, // Inicialmente false
+      _hasHydrated: false,
       addCachedOrder: (order) => set((state) => ({
         cachedOrders: [...state.cachedOrders, order],
       })),
@@ -43,22 +66,20 @@ export const useCachedOrdersStore = create<CachedOrdersState>()(
         set({
           _hasHydrated: state
         });
-      }, // Implementação da ação
+      },
     }),
     {
       name: 'cached-orders-storage',
-      storage: createJSONStorage(() => AsyncStorage as any), // Usar AsyncStorage
-      onRehydrateStorage: (state) => {
-        console.log('cached-orders-storage hydration starts');
+      storage: getStorage(),
+      onRehydrateStorage: () => {
         return (state, error) => {
           if (error) {
             console.error('cached-orders-storage hydration failed', error);
           } else {
-            console.log('cached-orders-storage hydration finished');
-            (state as CachedOrdersState).setHasHydrated(true);
+            (state as CachedOrdersState)?.setHasHydrated(true);
           }
         };
       },
     }
   )
-); 
+);

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Platform, Dimensions } from 'react-native';
-import { Share2, Menu, Chrome as Home, Users, Package, Settings, LogOut } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { MovingBorderButton } from '../../components/ui/moving-border';
 import Animated, { 
@@ -13,29 +12,13 @@ import Animated, {
 import { useBannerStore } from '../../store/useBannerStore';
 import { Sidebar, MenuItem } from '../../components/shared/Sidebar';
 import { useNavigation } from '../../hooks/useNavigation';
+import { supabase } from '../../lib/supabase';
 
-const mockBrands = [
-  { 
-    id: '1', 
-    name: 'Slice', 
-    image: 'https://slicebrasil.com.br/wp-content/uploads/2024/12/logo.svg' 
-  },
-  { 
-    id: '2', 
-    name: 'Nestlé', 
-    image: 'https://assets.ype.ind.br/assets/logo_ype_3d.png' 
-  },
-  { 
-    id: '3', 
-    name: 'Bauducco', 
-    image: 'https://www.lojabauducco.com.br/arquivos/logo-bauducco.png?v=638322222120300000' 
-  },
-  { 
-    id: '4', 
-    name: 'Heinz', 
-    image: 'https://kreafolk.com/cdn/shop/articles/heinz-logo-design-history-and-evolution-kreafolk_51be050e-1ba4-4aad-a0d4-9f7c30b6787b.jpg?v=1717725012&width=2048' 
-  },
-];
+interface Brand {
+  id: string;
+  name: string;
+  image_url: string | null;
+}
 
 const mockProducts = [
   {
@@ -147,34 +130,29 @@ export default function OrdersScreen() {
   const menuItems: MenuItem[] = [
     { 
       title: 'Página Inicial',
-      route: '/(tabs)/orders',
-      icon: Home
+      route: '/(app)/orders',
     },
     { 
       title: 'Clientes',
-      route: '/(tabs)/clients',
-      icon: Users
+      route: '/(app)/clients',
     },
     { 
       title: 'Produtos',
-      route: '/(tabs)/products',
-      icon: Package
+      route: '/(app)/products',
     },
     { 
       title: 'Configurações',
-      route: '/(tabs)/settings',
-      icon: Settings
+      route: '/(app)/settings',
     },
     { 
       title: 'Sair',
-      route: '/login',
-      icon: LogOut,
-      color: '#FF3B30'
+      route: '/(auth)/login',
+      color: '#FF3B30',
     },
   ];
 
   const handleNavigation = (route: string) => {
-    navigateTo(route);
+    router.push(route as any);
     setIsOpen(false);
   };
 
@@ -208,13 +186,31 @@ export default function OrdersScreen() {
     navigateTo('/sync-orders');
   };
 
+  const [brands, setBrands] = useState<Brand[]>([]);
+
+  useEffect(() => {
+    fetchBrands();
+  }, []);
+
+  const fetchBrands = async () => {
+    const { data, error } = await supabase
+      .from('brands')
+      .select('id, name, image_url');
+
+    if (error) {
+      console.error('Erro ao buscar marcas:', error);
+    } else {
+      setBrands((data as Brand[]) || []);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity 
         style={styles.menuButton} 
         onPress={() => setIsOpen(true)}
       >
-        <Menu size={24} color="#003B71" />
+        <Text style={styles.menuButtonText}>☰</Text>
       </TouchableOpacity>
 
       <Sidebar 
@@ -227,7 +223,7 @@ export default function OrdersScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity style={styles.shareButton} onPress={handleSyncPress}>
-            <Share2 size={24} color="#003B71" />
+            <Text style={styles.shareButtonText}>Compartilhar</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.welcomeContainer}>
@@ -279,17 +275,17 @@ export default function OrdersScreen() {
             showsHorizontalScrollIndicator={false} 
             style={styles.brandsScroll}
           >
-            {mockBrands.map((brand) => (
+            {brands.map((brand) => (
               <TouchableOpacity 
-                key={brand.id} 
-                style={styles.brandItem}
-                onPress={() => navigateTo('/brands' as any)}
+                key={brand.id}
+                style={styles.brandCard}
+                onPress={() => navigateTo(`/(tabs)/brands/${brand.id}` as any)}
               >
                 <Image 
-                  source={{ uri: brand.image }} 
+                  source={brand.image_url ? { uri: brand.image_url } : undefined}
                   style={styles.brandImage}
-                  resizeMode="contain"
                 />
+                <Text style={styles.brandName}>{brand.name}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -490,35 +486,39 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-Medium',
   },
   brandsScroll: {
-    paddingLeft: 16,
+    marginTop: 12,
+    paddingHorizontal: 16,
   },
-  brandItem: {
-    width: 120,
-    height: 80,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+  brandCard: {
     marginRight: 16,
-    padding: 8,
-    justifyContent: 'center',
     alignItems: 'center',
+  },
+  brandImage: {
+    width: 80,
+    height: 80,
+    resizeMode: 'contain',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     ...Platform.select({
       ios: {
-        shadowColor: '#000000',
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
       },
       android: {
-        elevation: 4,
+        elevation: 2,
       },
       web: {
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
       }
     }),
   },
-  brandImage: {
-    width: '100%',
-    height: '100%',
+  brandName: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Regular',
   },
   productsSection: {
     marginBottom: 24,
@@ -610,5 +610,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     fontFamily: 'Montserrat-Bold',
+  },
+  menuButtonText: {
+    fontSize: 24,
+    color: '#003B71',
+    paddingHorizontal: 16,
+  },
+  shareButtonText: {
+    fontSize: 14,
+    color: '#003B71',
+    marginRight: 16,
   },
 }); 

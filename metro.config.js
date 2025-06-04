@@ -1,14 +1,28 @@
-const { getDefaultConfig } = require('@expo/metro-config');
+const { getDefaultConfig } = require("expo/metro-config");
+const { withNativeWind } = require("nativewind/metro");
 
+/** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
-// Adiciona suporte para resolver módulos
-config.resolver.sourceExts = ['jsx', 'js', 'ts', 'tsx', 'json'];
-config.resolver.assetExts = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+// Expo SDK 53 specific resolver configuration for Node.js modules
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // Lista reduzida de módulos Node.js desabilitados
+  if (
+    moduleName === 'fs' ||
+    moduleName === 'path' ||
+    moduleName === 'os' ||
+    moduleName.startsWith('node:')
+  ) {
+    return {
+      type: 'empty',
+    };
+  }
 
-// Adiciona resolução extra para o nanoid
-config.resolver.extraNodeModules = {
-  'nanoid/non-secure': require.resolve('nanoid/non-secure'),
+  // Default resolver
+  return context.resolveRequest(context, moduleName, platform);
 };
 
-module.exports = config; 
+// Desabilitar a resolução de package exports que causa conflitos
+config.resolver.unstable_enablePackageExports = false;
+
+module.exports = withNativeWind(config, { input: "./global.css" });

@@ -1,13 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView, Image } from 'react-native';
 import { Search, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { mockBrands } from '../../../data/mocks';
+import { supabase } from '../../../lib/supabase';
+
+interface Brand {
+  id: string;
+  name: string;
+  image_url: string | null;
+}
 
 export default function BrandsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [brands, setBrands] = useState<Brand[]>([]);
 
-  const filteredBrands = mockBrands.filter(brand =>
+  useEffect(() => {
+    fetchBrands();
+  }, []);
+
+  const fetchBrands = async () => {
+    const { data, error } = await supabase
+      .from('brands')
+      .select('id, name, image_url');
+
+    if (error) {
+      console.error('Erro ao buscar marcas:', error);
+    } else {
+      setBrands((data as Brand[]) || []);
+    }
+  };
+
+  const filteredBrands = brands.filter(brand =>
     Object.values(brand).some(value =>
       String(value).toLowerCase().includes(searchQuery.toLowerCase())
     )
@@ -50,14 +73,13 @@ export default function BrandsScreen() {
             >
               <View style={styles.logoContainer}>
                 <Image 
-                  source={{ uri: brand.image }} 
+                  source={brand.image_url ? { uri: brand.image_url } : undefined}
                   style={styles.brandLogo}
                   resizeMode="contain"
                 />
               </View>
               <View style={styles.brandInfo}>
                 <Text style={styles.brandName}>{brand.name}</Text>
-                <Text style={styles.brandCode}>Código: {brand.code}</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -160,7 +182,7 @@ const styles = StyleSheet.create({
     }),
   },
   logoContainer: {
-    height: 160,
+    height: 165,
     backgroundColor: '#F8F9FA',
     justifyContent: 'center',
     alignItems: 'center',
@@ -178,10 +200,5 @@ const styles = StyleSheet.create({
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
     marginBottom: 4,
-  },
-  brandCode: {
-    fontSize: 14,
-    color: '#666666',
-    fontFamily: 'Montserrat-Regular',
   },
 });

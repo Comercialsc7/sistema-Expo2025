@@ -1,24 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
 import { router } from 'expo-router';
 import RNPickerSelect from 'react-native-picker-select';
+import { supabase } from '../lib/supabase';
 
 const logoDmuller = require('../assets/images/logoDmuller.png');
 
-const teams = [
-  { label: 'Litoral M', value: 49 },
-  { label: 'Litoral D', value: 35 },
-  { label: 'Floripa M', value: 14 },
-  { label: 'Floripa D', value: 18 },
-];
+interface Team {
+  id: string;
+  code: number;
+  name: string;
+}
 
 export default function Login() {
   const [code, setCode] = useState('');
   const [selectedTeam, setSelectedTeam] = useState<number | undefined>(undefined);
+  const [teams, setTeams] = useState<Team[]>([]);
+
+  useEffect(() => {
+    fetchTeams();
+  }, []);
+
+  const fetchTeams = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('*')
+        .order('code');
+
+      if (error) {
+        console.error('Erro ao buscar equipes:', error);
+        return;
+      }
+
+      setTeams(data || []);
+    } catch (error) {
+      console.error('Erro:', error);
+    }
+  };
 
   const handleLogin = () => {
-    // Adicione aqui a lógica de autenticação, se houver
-    router.replace('/(app)/orders'); // Navega para a tela de Pedidos após o login
+    router.replace('/(app)/orders');
   };
 
   return (
@@ -35,7 +57,10 @@ export default function Login() {
               <RNPickerSelect
                 onValueChange={(value) => setSelectedTeam(value || undefined)}
                 value={selectedTeam}
-                items={teams}
+                items={teams.map(team => ({
+                  label: team.name,
+                  value: team.code
+                }))}
                 style={{
                   inputIOS: styles.picker,
                   inputAndroid: styles.picker,
@@ -48,10 +73,10 @@ export default function Login() {
               />
             </View>
 
-            <Text style={styles.label}>Consultor:</Text>
+            <Text style={styles.label}>Representante:</Text>
             <TextInput
               style={styles.input}
-              placeholder="Código do Vendedor/Supervisor"
+              placeholder="Código do Vendedor"
               placeholderTextColor="#8A8A8A"
               keyboardType="numeric"
               value={code}

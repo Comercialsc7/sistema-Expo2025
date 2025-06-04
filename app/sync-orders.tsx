@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList, ActivityIndicator, Alert, Modal, Image } from 'react-native';
 import { useNavigation } from '../hooks/useNavigation';
-import { ArrowLeft, ArrowUp, ArrowDown, CheckCircle, XCircle, Package, Calendar, Gift } from 'lucide-react-native';
+import { ArrowLeft, ArrowUp, ArrowDown, CircleCheck as CheckCircle, Circle as XCircle, Package, Calendar, Gift } from 'lucide-react-native';
 import { useCachedOrdersStore, CachedOrder } from '../store/useCachedOrdersStore';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SyncOrdersScreen() {
   const { goBack } = useNavigation();
@@ -18,10 +17,8 @@ export default function SyncOrdersScreen() {
       setIsSending(true);
       setSyncStatus('idle');
       
-      // TODO: Implementar lógica real de envio
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulação de envio
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Limpar cache após envio bem-sucedido
       clearCachedOrders();
       setSyncStatus('success');
       Alert.alert('Sucesso', 'Dados enviados com sucesso!');
@@ -38,8 +35,7 @@ export default function SyncOrdersScreen() {
       setIsReceiving(true);
       setSyncStatus('idle');
       
-      // TODO: Implementar lógica real de recebimento
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulação de recebimento
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       setSyncStatus('success');
       Alert.alert('Sucesso', 'Dados recebidos com sucesso!');
@@ -58,7 +54,6 @@ export default function SyncOrdersScreen() {
     }).format(value);
   };
 
-  // Função para renderizar um item da lista de pedidos em cache
   const renderCachedOrderItem = ({ item }: { item: CachedOrder }) => (
     <TouchableOpacity 
       style={styles.cachedOrderItem}
@@ -521,4 +516,4 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderRadius: 8,
   },
-}); 
+});

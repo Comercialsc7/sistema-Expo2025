@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { X, Home, Package, Users, Settings, LogOut } from 'lucide-react-native';
 import Animated, { 
   useAnimatedStyle, 
   withTiming,
@@ -12,7 +11,6 @@ import { router } from 'expo-router';
 export interface MenuItem {
   title: string;
   route: string;
-  icon?: any;
   color?: string;
 }
 
@@ -67,31 +65,6 @@ export function Sidebar({
     onClose();
   };
 
-  const defaultMenuItems = [
-    {
-      title: 'Início',
-      route: '/(app)',
-      icon: Home
-    },
-    {
-      title: 'Produtos',
-      route: '/(app)/products',
-      icon: Package
-    },
-    {
-      title: 'Clientes',
-      route: '/(app)/clients',
-      icon: Users
-    },
-    {
-      title: 'Configurações',
-      route: '/(app)/settings',
-      icon: Settings
-    }
-  ];
-
-  const items = menuItems || defaultMenuItems;
-
   return (
     <>
       <Animated.View 
@@ -101,7 +74,7 @@ export function Sidebar({
       <Animated.View style={[styles.sidebar, sidebarStyle, { width }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <X size={24} color="#003B71" />
+            <Text style={styles.closeButtonText}>✕</Text>
           </TouchableOpacity>
         </View>
 
@@ -112,13 +85,6 @@ export function Sidebar({
               style={styles.menuItem}
               onPress={() => handleNavigation(item.route)}
             >
-              {item.icon && (
-                <item.icon 
-                  size={24} 
-                  color={item.color || '#003B71'} 
-                  style={styles.menuIcon}
-                />
-              )}
               <Text style={[
                 styles.menuText,
                 item.color && { color: item.color }
@@ -134,7 +100,6 @@ export function Sidebar({
             style={styles.logoutButton}
             onPress={() => handleNavigation(sairItem.route)}
           >
-            <LogOut size={24} color={sairItem.color || '#FF3B30'} style={styles.menuIcon} />
             <Text style={[styles.menuText, { color: sairItem.color || '#FF3B30' }]}>Sair</Text>
           </TouchableOpacity>
         )}
@@ -181,6 +146,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  closeButtonText: {
+    fontSize: 20,
+    color: '#003B71',
+  },
   menu: {
     padding: 16,
     paddingBottom: 80,
@@ -192,24 +161,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
   },
-  menuIcon: {
-    marginRight: 12,
-  },
   menuText: {
     fontSize: 16,
     color: '#003B71',
-    fontFamily: 'Montserrat-Medium',
   },
   logoutButton: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#FFF',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
   },
 }); 
