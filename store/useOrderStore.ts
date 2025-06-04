@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { Platform } from 'react-native';
 
 export interface OrderItem {
   id: string;
@@ -43,6 +44,29 @@ interface OrderState {
   setPaymentTerm: (term: PaymentTerm) => void;
 }
 
+// Create a dummy storage for SSR
+const createNoopStorage = () => {
+  return {
+    getItem: () => Promise.resolve(null),
+    setItem: () => Promise.resolve(),
+    removeItem: () => Promise.resolve(),
+  };
+};
+
+// Get the appropriate storage mechanism
+const getStorage = () => {
+  if (Platform.OS === 'web') {
+    // Check if we're in a browser environment
+    if (typeof window !== 'undefined') {
+      return createJSONStorage(() => localStorage);
+    }
+    // If we're not in a browser (SSR), use noop storage
+    return createJSONStorage(() => createNoopStorage());
+  }
+  // For React Native, use AsyncStorage
+  return createJSONStorage(() => createNoopStorage()); // No persistence on native for this store
+};
+
 export const useOrderStore = create<OrderState>()(
   persist(
     (set) => ({
@@ -64,7 +88,7 @@ export const useOrderStore = create<OrderState>()(
     }),
     {
       name: 'order-storage',
-      storage: createJSONStorage(() => localStorage),
+      storage: getStorage(),
     }
   )
-); 
+);
