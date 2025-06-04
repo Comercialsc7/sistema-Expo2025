@@ -51,7 +51,7 @@ export default function Login() {
             <Text style={styles.label}>Representante:</Text>
             <TextInput
               style={styles.input}
-              placeholder="Código do Vendedor/Supervisor"
+              placeholder="Código do Vendedor"
               placeholderTextColor="#8A8A8A"
               keyboardType="numeric"
               value={code}
