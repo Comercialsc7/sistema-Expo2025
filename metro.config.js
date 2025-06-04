@@ -6,9 +6,10 @@ const config = getDefaultConfig(__dirname);
 config.resolver.sourceExts = ['mjs', 'jsx', 'js', 'ts', 'tsx', 'json'];
 config.resolver.assetExts = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
 
-// Add resolution for nanoid
+// Add resolution for nanoid and other problematic modules
 config.resolver.extraNodeModules = {
   'nanoid/non-secure': require.resolve('nanoid/non-secure'),
+  '@supabase/postgrest-js': require.resolve('@supabase/postgrest-js'),
 };
 
 module.exports = config;
