@@ -48,7 +48,7 @@ export default function Login() {
               />
             </View>
 
-            <Text style={styles.label}>Consultor:</Text>
+            <Text style={styles.label}>Representante:</Text>
             <TextInput
               style={styles.input}
               placeholder="Código do Vendedor/Supervisor"
