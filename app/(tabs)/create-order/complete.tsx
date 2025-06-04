@@ -44,6 +44,14 @@ export default function FinalizarPedido() {
       client: client,
       paymentTerm: paymentTerm,
       timestamp: new Date().toISOString(),
+      subtotal: subtotal,
+      total: total,
+      discount: desconto,
+      spinPrize: results.length > 0 ? {
+        type: 'product' as const,
+        description: results[0].prize,
+        photo: results[0].photoUri
+      } : undefined
     };
 
     addCachedOrder(orderToCache);

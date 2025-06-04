@@ -47,7 +47,8 @@
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",
     "use-latest-callback": "0.1.9",
-    "zustand": "^4.5.0"
+    "zustand": "^4.5.0",
+    "@react-native-async-storage/async-storage": "2.1.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

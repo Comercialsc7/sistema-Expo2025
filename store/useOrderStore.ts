@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface OrderItem {
   id: string;
@@ -42,20 +43,28 @@ interface OrderState {
   setPaymentTerm: (term: PaymentTerm) => void;
 }
 
-export const useOrderStore = create<OrderState>((set) => ({
-  items: [],
-  client: undefined,
-  paymentTerm: undefined,
-  addItem: (item) => set((state) => ({ items: [...state.items, item] })),
-  removeItem: (index) => set((state) => ({ 
-    items: state.items.filter((_, i) => i !== index) 
-  })),
-  updateItemQuantity: (index, quantity) => set((state) => ({
-    items: state.items.map((item, i) => 
-      i === index ? { ...item, quantity } : item
-    )
-  })),
-  clearOrder: () => set({ items: [], client: undefined, paymentTerm: undefined }),
-  setClient: (client) => set({ client }),
-  setPaymentTerm: (term) => set({ paymentTerm: term }),
-})); 
+export const useOrderStore = create<OrderState>()(
+  persist(
+    (set) => ({
+      items: [],
+      client: undefined,
+      paymentTerm: undefined,
+      addItem: (item) => set((state) => ({ items: [...state.items, item] })),
+      removeItem: (index) => set((state) => ({ 
+        items: state.items.filter((_, i) => i !== index) 
+      })),
+      updateItemQuantity: (index, quantity) => set((state) => ({
+        items: state.items.map((item, i) => 
+          i === index ? { ...item, quantity } : item
+        )
+      })),
+      clearOrder: () => set({ items: [], client: undefined, paymentTerm: undefined }),
+      setClient: (client) => set({ client }),
+      setPaymentTerm: (term) => set({ paymentTerm: term }),
+    }),
+    {
+      name: 'order-storage',
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+); 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { Menu, Chrome as Home, Users, Package, Settings, LogOut } from 'lucide-react-native';
+import { Menu, Home, Users, Package, Settings, LogOut } from 'lucide-react-native';
 import { Sidebar, MenuItem } from '../../components/shared/Sidebar';
 
 export default function AppLayout() {
@@ -59,10 +59,10 @@ export default function AppLayout() {
 
       <View style={styles.main}>
         <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="orders" />
-          <Stack.Screen name="clients" />
-          <Stack.Screen name="products" />
-          <Stack.Screen name="settings" />
+          <Stack.Screen name="(app)/orders" />
+          <Stack.Screen name="(app)/clients" />
+          <Stack.Screen name="(app)/products" />
+          <Stack.Screen name="(app)/settings" />
         </Stack>
       </View>
     </View>
