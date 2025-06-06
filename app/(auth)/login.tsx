@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
 import { router } from 'expo-router';
 import RNPickerSelect from 'react-native-picker-select';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
-const logoDmuller = require('../assets/images/logoDmuller.png');
+const logoDmuller = require('../../assets/images/logoDmuller.png');
 
 interface Team {
   id: string;
@@ -17,8 +17,13 @@ export default function Login() {
   const [selectedTeam, setSelectedTeam] = useState<number | undefined>(undefined);
   const [teams, setTeams] = useState<Team[]>([]);
 
+  const codeInputRef = useRef<TextInput>(null);
+
   useEffect(() => {
     fetchTeams();
+    if (Platform.OS === 'web' && codeInputRef.current) {
+      codeInputRef.current.focus();
+    }
   }, []);
 
   const fetchTeams = async () => {
@@ -75,6 +80,7 @@ export default function Login() {
 
             <Text style={styles.label}>Representante:</Text>
             <TextInput
+              ref={codeInputRef}
               style={styles.input}
               placeholder="Código do Vendedor"
               placeholderTextColor="#8A8A8A"

@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useSpinResultsStore } from '../../../store/useSpinResultsStore';
+import { optimizeImage } from '../../../lib/imageUtils';
 
 const premios = [
   'Fritadeira Inox',
@@ -53,7 +54,12 @@ export default function SpinWheelScreen() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const photoUri = result.assets[0].uri;
         if (photoUri) {
-          setCapturedImage(photoUri);
+          const optimizedUri = await optimizeImage(photoUri, {
+            maxWidth: 1200,
+            maxHeight: 900,
+            quality: 0.8
+          });
+          setCapturedImage(optimizedUri);
         } else {
           Alert.alert('Erro', 'Não foi possível capturar a foto. Tente novamente.');
         }

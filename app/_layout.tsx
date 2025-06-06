@@ -12,6 +12,7 @@ export default function RootLayout() {
     <View style={styles.container}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="login" />
+        <Stack.Screen name="(app)" />
         <Stack.Screen name="(tabs)" />
       </Stack>
       <StatusBar style="auto" />

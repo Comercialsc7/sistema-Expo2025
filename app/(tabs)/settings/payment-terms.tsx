@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react-native';
+import InputGroup from '../../../components/shared/InputGroup';
 import { usePaymentTermsStore } from '../../../store/usePaymentTermsStore';
 
 export default function PaymentTermsScreen() {
@@ -31,27 +32,19 @@ export default function PaymentTermsScreen() {
       <View style={styles.content}>
         <View style={styles.addSection}>
           <Text style={styles.sectionTitle}>Adicionar Novo Prazo</Text>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Dias</Text>
-            <TextInput
-              style={styles.input}
-              value={newTerm.days}
-              onChangeText={(text) => setNewTerm(prev => ({ ...prev, days: text }))}
-              placeholder="Ex: 30"
-              keyboardType="numeric"
-              placeholderTextColor="#999"
-            />
-          </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Descrição</Text>
-            <TextInput
-              style={styles.input}
-              value={newTerm.description}
-              onChangeText={(text) => setNewTerm(prev => ({ ...prev, description: text }))}
-              placeholder="Ex: 30 dias"
-              placeholderTextColor="#999"
-            />
-          </View>
+          <InputGroup
+            label="Dias"
+            value={newTerm.days}
+            onChangeText={(text: string) => setNewTerm(prev => ({ ...prev, days: text }))}
+            placeholder="Ex: 30"
+            keyboardType="numeric"
+          />
+          <InputGroup
+            label="Descrição"
+            value={newTerm.description}
+            onChangeText={(text: string) => setNewTerm(prev => ({ ...prev, description: text }))}
+            placeholder="Ex: 30 dias"
+          />
           <TouchableOpacity style={styles.addButton} onPress={handleAddTerm}>
             <Plus size={20} color="#FFFFFF" />
             <Text style={styles.addButtonText}>Adicionar Prazo</Text>
@@ -130,23 +123,6 @@ const styles = StyleSheet.create({
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
     marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    color: '#666666',
-    fontFamily: 'Montserrat-Regular',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: '#333333',
-    fontFamily: 'Montserrat-Regular',
   },
   addButton: {
     flexDirection: 'row',

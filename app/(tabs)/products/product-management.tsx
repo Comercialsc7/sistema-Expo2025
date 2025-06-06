@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Platform, ViewStyle, TextStyle } from 'react-native';
 import { Upload, ArrowLeft } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
+import InputGroup from '../../../components/shared/InputGroup';
+import { optimizeImage } from '../../../lib/imageUtils';
 
 const Diamond = require('../../../assets/images/diamond.png');
 
@@ -25,7 +27,12 @@ export default function ProductManagement() {
     });
 
     if (!result.canceled) {
-      setProductData(prev => ({ ...prev, image: result.assets[0].uri }));
+      const optimizedUri = await optimizeImage(result.assets[0].uri, {
+        maxWidth: 800,
+        maxHeight: 800,
+        quality: 0.8
+      });
+      setProductData(prev => ({ ...prev, image: optimizedUri }));
     }
   };
 
@@ -57,53 +64,41 @@ export default function ProductManagement() {
 
         <View style={styles.form}>
           <View style={styles.row}>
-            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.label}>Nome do Produto</Text>
-              <TextInput
-                style={styles.input}
-                value={productData.name}
-                onChangeText={(text) => setProductData(prev => ({ ...prev, name: text }))}
-                placeholder="Ex: Slice Original"
-                placeholderTextColor="#999"
-              />
-            </View>
+            <InputGroup
+              label="Nome do Produto"
+              value={productData.name}
+              onChangeText={(text: string) => setProductData(prev => ({ ...prev, name: text }))}
+              placeholder="Ex: Slice Original"
+              style={{ flex: 1, marginRight: 8 }}
+            />
 
-            <View style={[styles.inputGroup, { flex: 0.4 }]}>
-              <Text style={styles.label}>Código</Text>
-              <TextInput
-                style={styles.input}
-                value={productData.code}
-                onChangeText={(text) => setProductData(prev => ({ ...prev, code: text }))}
-                placeholder="SLI001"
-                placeholderTextColor="#999"
-              />
-            </View>
+            <InputGroup
+              label="Código"
+              value={productData.code}
+              onChangeText={(text: string) => setProductData(prev => ({ ...prev, code: text }))}
+              placeholder="SLI001"
+              style={{ flex: 0.4 }}
+            />
           </View>
 
           <View style={styles.row}>
-            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.label}>Preço</Text>
-              <TextInput
-                style={styles.input}
-                value={productData.price}
-                onChangeText={(text) => setProductData(prev => ({ ...prev, price: text }))}
-                placeholder="R$ 0,00"
-                placeholderTextColor="#999"
-                keyboardType="decimal-pad"
-              />
-            </View>
+            <InputGroup
+              label="Preço"
+              value={productData.price}
+              onChangeText={(text: string) => setProductData(prev => ({ ...prev, price: text }))}
+              placeholder="R$ 0,00"
+              keyboardType="decimal-pad"
+              style={{ flex: 1, marginRight: 8 }}
+            />
 
-            <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Quantidade por Caixa</Text>
-              <TextInput
-                style={styles.input}
-                value={productData.quantity}
-                onChangeText={(text) => setProductData(prev => ({ ...prev, quantity: text }))}
-                placeholder="28"
-                placeholderTextColor="#999"
-                keyboardType="number-pad"
-              />
-            </View>
+            <InputGroup
+              label="Quantidade por Caixa"
+              value={productData.quantity}
+              onChangeText={(text: string) => setProductData(prev => ({ ...prev, quantity: text }))}
+              placeholder="28"
+              keyboardType="number-pad"
+              style={{ flex: 1 }}
+            />
           </View>
 
           <TouchableOpacity
@@ -191,46 +186,10 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 16,
-  },
+  } as ViewStyle,
   row: {
     flexDirection: 'row',
     marginBottom: 16,
-  },
-  inputGroup: {
-    flex: 1,
-  },
-  label: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 8,
-    fontFamily: 'Montserrat-Medium',
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#333333',
-    fontFamily: 'Montserrat-Regular',
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      }
-    }),
   },
   acceleratorButton: {
     alignSelf: 'center',
@@ -276,5 +235,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontFamily: 'Montserrat-Bold',
-  },
+  } as TextStyle,
 });

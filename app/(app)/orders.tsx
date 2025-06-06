@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Platform, Dimensions } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { MovingBorderButton } from '../../components/ui/moving-border';
 import Animated, { 
   useAnimatedStyle, 
@@ -13,6 +13,8 @@ import { useBannerStore } from '../../store/useBannerStore';
 import { Sidebar, MenuItem } from '../../components/shared/Sidebar';
 import { useNavigation } from '../../hooks/useNavigation';
 import { supabase } from '../../lib/supabase';
+import { Share2 } from 'lucide-react-native';
+import SectionHeader from '../../components/shared/SectionHeader';
 
 interface Brand {
   id: string;
@@ -223,7 +225,7 @@ export default function OrdersScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity style={styles.shareButton} onPress={handleSyncPress}>
-            <Text style={styles.shareButtonText}>Compartilhar</Text>
+            <Share2 size={24} color="#003B71" />
           </TouchableOpacity>
         </View>
         <View style={styles.welcomeContainer}>
@@ -261,15 +263,10 @@ export default function OrdersScreen() {
         )}
 
         <View style={styles.brandsSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Marcas</Text>
-            <TouchableOpacity 
-              style={styles.viewAllButton} 
-              onPress={handleViewAllBrands}
-            >
-              <Text style={styles.viewAllText}>Ver todas</Text>
-            </TouchableOpacity>
-          </View>
+          <SectionHeader 
+            title="Marcas" 
+            onViewAll={handleViewAllBrands}
+          />
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false} 
@@ -292,21 +289,10 @@ export default function OrdersScreen() {
         </View>
 
         <View style={styles.productsSection}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.titleContainer}>
-              <Image 
-                source={{ uri: 'https://img.icons8.com/?size=100&id=G6Rd2soHM2Xn&format=png&color=000000' }}
-                style={styles.titleIcon}
-              />
-              <Text style={styles.sectionTitle}>Itens Aceleradores</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.viewAllButton} 
-              onPress={() => navigateTo('/(tabs)/products' as any)}
-            >
-              <Text style={styles.viewAllText}>Ver todos</Text>
-            </TouchableOpacity>
-          </View>
+          <SectionHeader 
+            title="Itens Aceleradores" 
+            onViewAll={() => navigateTo('/(tabs)/products' as any)}
+          />
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false} 
@@ -465,26 +451,6 @@ const styles = StyleSheet.create({
   brandsSection: {
     marginBottom: 24,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Bold',
-  },
-  viewAllButton: {
-    padding: 8,
-  },
-  viewAllText: {
-    fontSize: 14,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Medium',
-  },
   brandsScroll: {
     marginTop: 12,
     paddingHorizontal: 16,
@@ -522,15 +488,6 @@ const styles = StyleSheet.create({
   },
   productsSection: {
     marginBottom: 24,
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  titleIcon: {
-    width: 24,
-    height: 24,
   },
   productsScroll: {
     paddingLeft: 16,

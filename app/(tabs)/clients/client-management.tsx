@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
 import { useNavigation } from '../../../hooks/useNavigation';
+import InputGroup from '../../../components/shared/InputGroup';
 
 export default function ClientManagement() {
   const [clientData, setClientData] = useState({
@@ -30,8 +31,7 @@ export default function ClientManagement() {
       <View style={styles.content}>
         <View style={styles.form}>
           <View style={styles.row}>
-            <View style={[styles.inputGroup, { flex: 0.4 }]}>
-              <Text style={styles.label}>Código</Text>
+            <InputGroup label="Código" style={{ flex: 0.4 }}>
               <TextInput
                 style={styles.input}
                 value={clientData.code}
@@ -39,11 +39,10 @@ export default function ClientManagement() {
                 placeholder="001"
                 placeholderTextColor="#999"
               />
-            </View>
+            </InputGroup>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Razão Social</Text>
+          <InputGroup label="Razão Social">
             <TextInput
               style={styles.input}
               value={clientData.name}
@@ -51,10 +50,9 @@ export default function ClientManagement() {
               placeholder="Ex: Silva & Cia Ltda"
               placeholderTextColor="#999"
             />
-          </View>
+          </InputGroup>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nome Fantasia</Text>
+          <InputGroup label="Nome Fantasia">
             <TextInput
               style={styles.input}
               value={clientData.fantasyName}
@@ -62,10 +60,9 @@ export default function ClientManagement() {
               placeholder="Ex: Supermercado Silva"
               placeholderTextColor="#999"
             />
-          </View>
+          </InputGroup>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>CNPJ</Text>
+          <InputGroup label="CNPJ">
             <TextInput
               style={styles.input}
               value={clientData.cnpj}
@@ -74,7 +71,7 @@ export default function ClientManagement() {
               placeholderTextColor="#999"
               keyboardType="numeric"
             />
-          </View>
+          </InputGroup>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Text style={styles.saveButtonText}>Salvar Cliente</Text>
@@ -116,16 +113,6 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     marginBottom: 16,
-  },
-  inputGroup: {
-    flex: 1,
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 8,
-    fontFamily: 'Montserrat-Medium',
   },
   input: {
     backgroundColor: '#FFFFFF',

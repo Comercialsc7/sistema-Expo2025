@@ -4,10 +4,12 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Sidebar } from '../../components/shared/Sidebar';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function AppLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const router = useRouter();
+  const { logout } = useAuth();
 
   const menuItems = [
     {
@@ -28,13 +30,17 @@ export default function AppLayout() {
     },
     {
       title: 'Sair',
-      route: '/(auth)/login',
+      route: '/',
       color: '#FF3B30',
     },
   ];
 
   const handleNavigate = (route: string) => {
-    router.push(route);
+    if (route === '/') {
+      logout();
+    } else {
+      router.push(route);
+    }
   };
 
   return (

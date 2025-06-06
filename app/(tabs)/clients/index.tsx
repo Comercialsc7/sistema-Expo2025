@@ -1,9 +1,17 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView, FlatList } from 'react-native';
 import { Search, Plus, ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { mockClients } from '../../../data/mocks';
 import { useNavigation } from '../../../hooks/useNavigation';
+
+interface Client {
+  id: string;
+  code: string;
+  fantasyName?: string;
+  cnpj: string;
+  name: string;
+}
 
 export default function ClientManagement() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,6 +26,25 @@ export default function ClientManagement() {
   const handleAddClient = () => {
     navigateTo('/clients/client-management');
   };
+
+  const renderClientItem = ({ item }: { item: Client }) => (
+    <TouchableOpacity 
+      key={item.id}
+      style={styles.clientCard}
+      onPress={() => console.log('Client selected:', item.id)}
+    >
+      <View style={styles.clientInfo}>
+        <View style={styles.topLine}>
+          <Text style={styles.code}>{item.code}</Text>
+          <Text style={styles.name} numberOfLines={1}>{item.fantasyName}</Text>
+        </View>
+        <View style={styles.bottomLine}>
+          <Text style={styles.cnpj}>{item.cnpj}</Text>
+          <Text style={styles.legalName} numberOfLines={1}>{item.name}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
@@ -42,26 +69,12 @@ export default function ClientManagement() {
         />
       </View>
 
-      <ScrollView style={styles.listContainer}>
-        {filteredClients.map((client) => (
-          <TouchableOpacity 
-            key={client.id}
-            style={styles.clientCard}
-            onPress={() => console.log('Client selected:', client.id)}
-          >
-            <View style={styles.clientInfo}>
-              <View style={styles.topLine}>
-                <Text style={styles.code}>{client.code}</Text>
-                <Text style={styles.name} numberOfLines={1}>{client.fantasyName}</Text>
-              </View>
-              <View style={styles.bottomLine}>
-                <Text style={styles.cnpj}>{client.cnpj}</Text>
-                <Text style={styles.legalName} numberOfLines={1}>{client.name}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <FlatList
+        data={filteredClients}
+        renderItem={renderClientItem}
+        keyExtractor={(item) => item.id}
+        style={styles.listContainer}
+      />
     </View>
   );
 }

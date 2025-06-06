@@ -11,6 +11,8 @@ import {
   Modal,
   TouchableWithoutFeedback,
   Pressable,
+  ViewStyle,
+  TextStyle
 } from 'react-native';
 import { router } from 'expo-router';
 import { ArrowLeft, Plus, Trash2, CreditCard as Edit2, Upload, X, GripVertical } from 'lucide-react-native';
@@ -24,6 +26,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture, Directions } from 'react-native-gesture-handler';
 import { Banner } from '../../../store/useBannerStore';
+import InputGroup from '../../../components/shared/InputGroup';
+import { optimizeImage } from '../../../lib/imageUtils';
 
 const defaultColors = [
   "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#D4A5A5",
@@ -85,7 +89,12 @@ export default function BannerManagement() {
     });
 
     if (!result.canceled) {
-      setFormData(prev => ({ ...prev, image: result.assets[0].uri }));
+      const optimizedUri = await optimizeImage(result.assets[0].uri, {
+        maxWidth: 1920,
+        maxHeight: 1080,
+        quality: 0.8
+      });
+      setFormData(prev => ({ ...prev, image: optimizedUri }));
     }
   };
 
@@ -239,50 +248,41 @@ export default function BannerManagement() {
                 </TouchableOpacity>
 
                 <View style={styles.form}>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Título</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={formData.title}
-                      onChangeText={(text) => setFormData(prev => ({ ...prev, title: text }))}
-                      placeholder="Ex: Promoção Especial"
-                    />
-                  </View>
+                  <InputGroup
+                    label="Título"
+                    value={formData.title}
+                    onChangeText={(text: string) => setFormData(prev => ({ ...prev, title: text }))}
+                    placeholder="Ex: Promoção Especial"
+                  />
 
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Subtítulo</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={formData.subtitle}
-                      onChangeText={(text) => setFormData(prev => ({ ...prev, subtitle: text }))}
-                      placeholder="Ex: Até 30% de desconto"
-                    />
-                  </View>
+                  <InputGroup
+                    label="Subtítulo"
+                    value={formData.subtitle}
+                    onChangeText={(text: string) => setFormData(prev => ({ ...prev, subtitle: text }))}
+                    placeholder="Ex: Ganhe 10% de desconto"
+                  />
 
-                  <View style={styles.inputGroup}>
+                  <View>
                     <Text style={styles.label}>Cor de Fundo</Text>
-                    <View style={styles.colorGrid}>
-                      {defaultColors.map((color) => (
+                    <View style={styles.colorPicker}>
+                      {defaultColors.map((color, index) => (
                         <TouchableOpacity
-                          key={color}
+                          key={index}
                           style={[
                             styles.colorOption,
                             { backgroundColor: color },
-                            formData.backgroundColor === color && styles.colorOptionSelected
+                            formData.backgroundColor === color && styles.selectedColor,
                           ]}
                           onPress={() => setFormData(prev => ({ ...prev, backgroundColor: color }))}
                         />
                       ))}
                     </View>
                   </View>
-
-                  <TouchableOpacity 
-                    style={styles.saveButton}
-                    onPress={handleSaveBanner}
-                  >
-                    <Text style={styles.saveButtonText}>Salvar Banner</Text>
-                  </TouchableOpacity>
                 </View>
+
+                <TouchableOpacity style={styles.saveButton} onPress={handleSaveBanner}>
+                  <Text style={styles.saveButtonText}>Salvar Banner</Text>
+                </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -433,48 +433,28 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
-  },
+  } as ViewStyle,
   modalContent: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    width: '100%',
-    maxWidth: 500,
-    maxHeight: '90%',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.15)',
-      }
-    }),
-  },
+    padding: 24,
+    width: '90%',
+    maxHeight: '80%',
+  } as ViewStyle,
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-  },
+    marginBottom: 24,
+  } as ViewStyle,
   modalTitle: {
     fontSize: 20,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
-  },
+  } as TextStyle,
   closeButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    padding: 8,
+  } as ViewStyle,
   imageUpload: {
     height: 200,
     backgroundColor: '#F8F9FA',
@@ -501,41 +481,30 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   form: {
-    padding: 16,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
+    gap: 16,
+  } as ViewStyle,
   label: {
     fontSize: 14,
     color: '#666666',
     marginBottom: 8,
     fontFamily: 'Montserrat-Medium',
   },
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    fontSize: 16,
-    fontFamily: 'Montserrat-Regular',
-  },
-  colorGrid: {
+  colorPicker: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-  },
+    marginTop: 8,
+  } as ViewStyle,
   colorOption: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 2,
     borderColor: 'transparent',
-  },
-  colorOptionSelected: {
+  } as ViewStyle,
+  selectedColor: {
     borderColor: '#003B71',
-  },
+  } as ViewStyle,
   saveButton: {
     backgroundColor: '#0088CC',
     padding: 16,
