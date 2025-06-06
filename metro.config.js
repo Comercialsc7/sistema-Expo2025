@@ -4,6 +4,7 @@ const { withNativeWind } = require("nativewind/metro");
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
+<<<<<<< HEAD
 // Expo SDK 53 specific resolver configuration for Node.js modules
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   // Lista reduzida de módulos Node.js desabilitados
@@ -26,3 +27,16 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
 config.resolver.unstable_enablePackageExports = false;
 
 module.exports = withNativeWind(config, { input: "./global.css" });
+=======
+// Add support for resolving modules including .mjs files
+config.resolver.sourceExts = ['mjs', 'jsx', 'js', 'ts', 'tsx', 'json'];
+config.resolver.assetExts = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+
+// Add resolution for nanoid and other problematic modules
+config.resolver.extraNodeModules = {
+  'nanoid/non-secure': require.resolve('nanoid/non-secure'),
+  '@supabase/postgrest-js': require.resolve('@supabase/postgrest-js'),
+};
+
+module.exports = config;
+>>>>>>> 35b5d1e22841880ee9e9cd95e8a5bdda0ca132b8
