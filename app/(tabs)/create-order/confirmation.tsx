@@ -1,83 +1,48 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { CircleCheck as CheckCircle2 } from 'lucide-react-native';
-import { useSpinResultsStore } from '../../../store/useSpinResultsStore';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 
-export default function OrderConfirmation() {
+export default function ConfirmationScreen() {
   const params = useLocalSearchParams();
-  const { results } = useSpinResultsStore();
-  
-  const subtotal = Number(params.subtotal) || 0;
-  const itens = Number(params.itens) || 0;
-  const desconto = Number(params.desconto) || 0;
-  const total = Number(params.total) || 0;
-  const prazo = Number(params.prazo) || 0;
-  const email = params.email as string;
+
+  const handleFinish = () => {
+    router.replace('/(tabs)');
+  };
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content}>
-        <View style={styles.successSection}>
-          <CheckCircle2 size={64} color="#4CAF50" />
-          <Text style={styles.successTitle}>Pedido Enviado!</Text>
-          <Text style={styles.successMessage}>
-            Seu pedido foi enviado para análise. Em breve você receberá um e-mail em{' '}
-            <Text style={styles.emailHighlight}>{email}</Text> com os detalhes desta negociação.
-          </Text>
-        </View>
-
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Resumo do Pedido</Text>
-          
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Text style={styles.summaryValue}>R$ {subtotal.toFixed(2)}</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Pedido Confirmado!</Text>
           </View>
           
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Itens</Text>
-            <Text style={styles.summaryValue}>{itens}</Text>
+      <View style={styles.content}>
+        <View style={styles.successIcon}>
+          <View style={{ width: 48, height: 48, backgroundColor: '#0088CC', borderRadius: 24 }} />
           </View>
           
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Desconto</Text>
-            <Text style={[styles.summaryValue, styles.discountValue]}>
-              R$ {desconto.toFixed(2)}
+        <Text style={styles.message}>
+          Seu pedido foi confirmado com sucesso!
             </Text>
-          </View>
 
-          <View style={styles.divider} />
-          
-          <View style={styles.summaryRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>R$ {total.toFixed(2)}</Text>
-          </View>
-
-          <View style={styles.paymentTermRow}>
-            <Text style={styles.paymentTermLabel}>Prazo de pagamento</Text>
-            <Text style={styles.paymentTermValue}>{prazo} dias</Text>
-          </View>
-        </View>
-
-        {results.length > 0 && (
-          <View style={styles.prizesCard}>
-            <Text style={styles.prizesTitle}>Prêmios Conquistados</Text>
-            {results.map((result, index) => (
-              <Text key={index} style={styles.prizeItem}>
-                • {result.prize}
+        <Text style={styles.emailText}>
+          Um email de confirmação foi enviado para:
+          {'\n'}
+          <Text style={styles.email}>{params.email}</Text>
               </Text>
-            ))}
+
+        {params.prize && (
+          <View style={styles.prizeSection}>
+            <Text style={styles.prizeTitle}>Prêmio Ganho:</Text>
+            <Text style={styles.prizeName}>{params.prize}</Text>
           </View>
         )}
+      </View>
 
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={() => router.replace('/(app)/orders')}
-        >
-          <Text style={styles.buttonText}>Voltar ao Início</Text>
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
+          <Text style={styles.finishButtonText}>Finalizar</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -87,147 +52,79 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
+  header: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 24,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
+  },
   content: {
     flex: 1,
     padding: 16,
-  },
-  successSection: {
     alignItems: 'center',
-    padding: 24,
+  },
+  successIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 24,
   },
-  successTitle: {
-    fontSize: 24,
-    color: '#4CAF50',
+  message: {
+    fontSize: 20,
+    color: '#003B71',
     fontFamily: 'Montserrat-Bold',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  successMessage: {
-    fontSize: 16,
-    color: '#666666',
     textAlign: 'center',
-    lineHeight: 24,
-    fontFamily: 'Montserrat-Regular',
-  },
-  emailHighlight: {
-    color: '#003B71',
-    fontFamily: 'Montserrat-Bold',
-  },
-  summaryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-      }
-    }),
-  },
-  summaryTitle: {
-    fontSize: 18,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Bold',
     marginBottom: 16,
   },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  summaryLabel: {
+  emailText: {
     fontSize: 16,
     color: '#666666',
     fontFamily: 'Montserrat-Regular',
-  },
-  summaryValue: {
-    fontSize: 16,
-    color: '#333333',
-    fontFamily: 'Montserrat-Medium',
-  },
-  discountValue: {
-    color: '#FF3B30',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E5E5',
-    marginVertical: 12,
-  },
-  totalLabel: {
-    fontSize: 18,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Bold',
-  },
-  totalValue: {
-    fontSize: 18,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Bold',
-  },
-  paymentTermRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  paymentTermLabel: {
-    fontSize: 14,
-    color: '#666666',
-    fontFamily: 'Montserrat-Regular',
-  },
-  paymentTermValue: {
-    fontSize: 14,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Bold',
-  },
-  prizesCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    textAlign: 'center',
     marginBottom: 24,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-      }
-    }),
   },
-  prizesTitle: {
-    fontSize: 18,
+  email: {
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
-    marginBottom: 12,
   },
-  prizeItem: {
-    fontSize: 16,
-    color: '#333333',
-    fontFamily: 'Montserrat-Regular',
-    marginBottom: 8,
-  },
-  button: {
-    backgroundColor: '#003B71',
+  prizeSection: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
+    width: '100%',
     alignItems: 'center',
-    marginBottom: 24,
   },
-  buttonText: {
+  prizeTitle: {
+    fontSize: 16,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+    marginBottom: 8,
+  },
+  prizeName: {
+    fontSize: 18,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
+  },
+  footer: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  finishButton: {
+    backgroundColor: '#0088CC',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  finishButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontFamily: 'Montserrat-Bold',

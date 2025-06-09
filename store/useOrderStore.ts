@@ -11,11 +11,14 @@ export interface OrderItem {
   image: string;
   quantity: number;
   isAccelerator: boolean;
-  paymentTerm?: {
-    id: string;
-    days: number;
-    description: string;
-  };
+  paymentTerm?: PaymentTerm;
+}
+
+export interface ClientPaymentTerm {
+  id: string;
+  prazo_id: number;
+  is_default: boolean;
+  prazo: PaymentTerm;
 }
 
 export interface Client {
@@ -23,13 +26,16 @@ export interface Client {
   name: string;
   code: string;
   cnpj: string;
-  address: string;
+  address?: string;
+  fantasy_name: string;
+  created_at: string | null;
+  payment_terms?: ClientPaymentTerm[];
 }
 
 export interface PaymentTerm {
   id: string;
-  days: number;
   description: string;
+  prazo_dias?: number;
 }
 
 interface OrderState {

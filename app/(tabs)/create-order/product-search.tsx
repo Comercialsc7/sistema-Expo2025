@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image, ScrollView } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Search, Calendar, Heart } from 'lucide-react-native';
 import Animated, { 
   SlideInUp,
   Layout,
@@ -9,11 +8,22 @@ import Animated, {
 } from 'react-native-reanimated';
 import { usePaymentTermsStore } from '../../../store/usePaymentTermsStore';
 import { useOrderStore } from '../../../store/useOrderStore';
-import { mockProducts, Product } from '../../../data/mocks';
+import { useProducts, Product } from '../../../hooks/useProducts';
+import { supabase } from '../../../lib/supabase';
 
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 const Diamond = require('../../../assets/images/diamond.png');
+
+/*
+interface Product {
+  id: string;
+  name: string;
+  code: string;
+  price: number;
+  image_url: string | null;
+}
+*/
 
 export default function ProductSearch() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,41 +31,76 @@ export default function ProductSearch() {
   const paymentTerms = usePaymentTermsStore(state => state.paymentTerms);
   const selectedPaymentTerm = paymentTerms.find(term => term.id === paymentTermId);
   const { addItem } = useOrderStore();
+  const { products, loading, error } = useProducts();
+  const [productsList, setProductsList] = useState<Product[]>([]);
 
-  const filteredProducts = mockProducts.filter(product =>
-    Object.values(product).some(value =>
-      String(value).toLowerCase().includes(searchQuery.toLowerCase())
-    )
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setProductsList(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar produtos:', error);
+    }
+  };
+
+  const filteredProducts = productsList.filter(product =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    product.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleSelectProduct = (product: Product) => {
     addItem({
       id: product.id,
       name: product.name,
-      box: `CX ${product.boxSize} unids.`,
+      box: `CX ${product.box_size} unids.`,
       price: product.price,
-      discount: product.discount,
-      image: product.image,
+      discount: 0, // TODO: Adicionar campo de desconto na tabela de produtos
+      image: product.image_url,
       quantity: 1,
-      isAccelerator: product.isAccelerator,
+      isAccelerator: product.is_accelerator,
       paymentTerm: selectedPaymentTerm
     });
     
     router.push('/(tabs)/create-order');
   };
 
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#003B71" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#003B71" />
+          <Image source={require('../../../assets/images/voltar.png')} style={styles.headerIconImage} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Adicionar Produto</Text>
+        <Text style={styles.headerTitle}>Buscar Produtos</Text>
       </View>
 
       {selectedPaymentTerm && (
         <View style={styles.paymentTermContainer}>
-          <Calendar size={20} color="#003B71" />
+          <View style={{ width: 20, height: 20, backgroundColor: '#003B71' }} />
           <Text style={styles.paymentTermText}>
             Prazo de Pagamento: {selectedPaymentTerm.days} dias
           </Text>
@@ -63,44 +108,38 @@ export default function ProductSearch() {
       )}
 
       <View style={styles.searchContainer}>
-        <Search size={20} color="#666666" style={styles.searchIcon} />
+        <View style={styles.searchInputContainer}>
+          <Image source={require('../../../assets/images/buscar.png')} style={styles.searchInnerIconImage} />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar produtos..."
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholderTextColor="#999999"
         />
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
         {filteredProducts.map((product, index) => (
-          <AnimatedTouchableOpacity
+          <TouchableOpacity
             key={product.id}
             style={styles.productCard}
             onPress={() => handleSelectProduct(product)}
-            entering={SlideInUp.delay(index * 100).springify()}
-            layout={Layout.springify()}
           >
             <View style={styles.productInfo}>
-              <View style={styles.productHeader}>
+              <View style={styles.productHeaderNew}>
                 <Text style={styles.productCode}>{product.code}</Text>
-                {product.isAccelerator && (
-                  <Image source={Diamond} style={{ width: 30, height: 30 }} />
+                {product.is_accelerator && (
+                  <Image source={Diamond} style={styles.productAcceleratorIcon} />
                 )}
               </View>
               <Text style={styles.productName}>{product.name}</Text>
-              <Text style={styles.boxSize}>Cx {product.boxSize} unds.</Text>
-              <View style={styles.priceRow}>
+              <View style={styles.boxAndPriceRow}>
+                <Text style={styles.boxSize}>Cx {product.box_size} unds.</Text>
                 <Text style={styles.price}>R$ {product.price.toFixed(2)}</Text>
-                {product.discount > 0 && (
-                  <View style={styles.discountBadge}>
-                    <Text style={styles.discountText}>{product.discount}%</Text>
-                  </View>
-                )}
               </View>
             </View>
-          </AnimatedTouchableOpacity>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </View>
@@ -112,6 +151,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 16,
+    fontFamily: 'Montserrat-Regular',
+  },
   header: {
     backgroundColor: '#FFFFFF',
     padding: 16,
@@ -122,105 +170,118 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E5E5',
   },
   backButton: {
+    marginRight: 16,
+  },
+  headerIconImage: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 20,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
-    marginLeft: 8,
   },
   searchContainer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    margin: 16,
-    padding: 12,
+    backgroundColor: '#F5F5F5',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-  },
-  searchIcon: {
-    marginRight: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   searchInput: {
     flex: 1,
+    marginLeft: 12,
     fontSize: 16,
-    color: '#333333',
+    color: '#003B71',
     fontFamily: 'Montserrat-Regular',
   },
+  searchInnerIconImage: {
+    width: 40,
+    height: 40,
+  },
   content: {
-    flex: 1,
     padding: 16,
   },
   productCard: {
-    flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    marginBottom: 8,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 2,
+        elevation: 4,
       },
       web: {
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
       }
     }),
   },
   productInfo: {
-    flex: 1,
+    padding: 8,
   },
-  productHeader: {
+  productHeaderNew: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    alignItems: 'center',
+    marginBottom: 2,
   },
   productCode: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#666666',
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Montserrat-Regular',
+  },
+  rightSection: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+  },
+  productAcceleratorIcon: {
+    width: 30,
+    height: 30,
   },
   productName: {
-    fontSize: 14,
-    color: '#333333',
+    fontSize: 16,
+    color: '#003B71',
     fontFamily: 'Montserrat-Bold',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   boxSize: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#666666',
     fontFamily: 'Montserrat-Regular',
     marginBottom: 4,
   },
-  priceRow: {
+  boxAndPriceRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 2,
   },
   price: {
     fontSize: 16,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Bold',
-    marginRight: 8,
+    color: '#333333',
+    fontFamily: 'Montserrat-SemiBold',
   },
   discountBadge: {
-    backgroundColor: '#FFE5E5',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: '#FF3B30',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
   },
   discountText: {
+    color: '#FFFFFF',
     fontSize: 12,
-    color: '#FF3B30',
     fontFamily: 'Montserrat-Bold',
   },
   paymentTermContainer: {

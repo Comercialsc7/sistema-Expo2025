@@ -1,60 +1,62 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowLeft, Search } from 'lucide-react-native';
-
-const mockProducts = [
-  {
-    id: '1',
-    name: 'Slice Original',
-    code: 'SLI001',
-    price: 89.90,
-    quantity: 28,
-    isAccelerator: true,
-    image: 'https://images.unsplash.com/photo-1627843563095-f6e94676cfe0?w=200&h=200&fit=crop'
-  },
-  {
-    id: '2',
-    name: 'Coca-Cola 2L',
-    code: 'COC002',
-    price: 8.99,
-    quantity: 6,
-    isAccelerator: false,
-    image: 'https://images.unsplash.com/photo-1570831739435-6601aa3fa4fb?w=200&h=200&fit=crop'
-  },
-];
+import { useProducts } from '../../../hooks/useProducts';
 
 const Diamond = require('../../../assets/images/diamond.png');
 
 export default function AcceleratorManagement() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { products, loading, error, toggleAccelerator } = useProducts();
 
-  const toggleAccelerator = (productId) => {
-    console.log('Toggle accelerator for product:', productId);
+  const filteredProducts = products.filter(product =>
+    Object.values(product).some(value =>
+      String(value).toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+
+  const handleToggleAccelerator = async (productId: string, currentValue: boolean) => {
+    await toggleAccelerator(productId, !currentValue);
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#003B71" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#003B71" />
+          <View style={{ width: 24, height: 24, backgroundColor: '#003B71' }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Produtos Aceleradores</Text>
       </View>
 
       <View style={styles.searchContainer}>
-        <Search size={20} color="#666" style={styles.searchIcon} />
+        <View style={{ width: 20, height: 20, backgroundColor: '#666' }} />
         <Text style={styles.searchPlaceholder}>Buscar produtos...</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {mockProducts.map((product) => (
+        {filteredProducts.map((product) => (
           <TouchableOpacity
             key={product.id}
             style={styles.productCard}
-            onPress={() => toggleAccelerator(product.id)}
+            onPress={() => handleToggleAccelerator(product.id, product.is_accelerator)}
           >
-            <Image source={{ uri: product.image }} style={styles.productImage} />
+            <Image source={{ uri: product.image_url }} style={styles.productImage} />
             <View style={styles.productInfo}>
               <Text style={styles.productName}>{product.name}</Text>
               <Text style={styles.productCode}>Código: {product.code}</Text>
@@ -62,7 +64,7 @@ export default function AcceleratorManagement() {
             </View>
             <View style={[
               styles.acceleratorIndicator,
-              product.isAccelerator && styles.acceleratorActive
+              product.is_accelerator && styles.acceleratorActive
             ]}>
               <Image source={Diamond} style={{ width: 30, height: 30 }} />
             </View>
@@ -77,6 +79,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 16,
+    fontFamily: 'Montserrat-Regular',
   },
   header: {
     backgroundColor: '#FFFFFF',
@@ -175,5 +186,6 @@ const styles = StyleSheet.create({
   },
   acceleratorActive: {
     backgroundColor: '#003B71',
+    borderColor: '#003B71',
   },
 });

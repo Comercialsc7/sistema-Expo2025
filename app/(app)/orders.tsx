@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Platform, Dimensions } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Platform, Dimensions, FlatList } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MovingBorderButton } from '../../components/ui/moving-border';
 import Animated, { 
@@ -13,113 +13,23 @@ import { useBannerStore } from '../../store/useBannerStore';
 import { Sidebar, MenuItem } from '../../components/shared/Sidebar';
 import { useNavigation } from '../../hooks/useNavigation';
 import { supabase } from '../../lib/supabase';
-import { Share2 } from 'lucide-react-native';
 import SectionHeader from '../../components/shared/SectionHeader';
+import { useProducts } from '../../hooks/useProducts';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Brand {
   id: string;
   name: string;
-  image_url: string | null;
+  image_url: string;
 }
 
-const mockProducts = [
-  {
-    id: '1',
-    name: 'Slice Original',
-    price: 89.90,
-    discount: 5,
-    quantity: 28,
-    image: 'https://images.unsplash.com/photo-1627843563095-f6e94676cfe0?w=200&h=200&fit=crop'
-  },
-  {
-    id: '2',
-    name: 'Slice Maçã Verde',
-    price: 89.90,
-    discount: 5,
-    quantity: 28,
-    image: 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=200&h=200&fit=crop'
-  },
-  {
-    id: '3',
-    name: 'Slice Laranja',
-    price: 89.90,
-    discount: 10,
-    quantity: 28,
-    image: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=200&h=200&fit=crop'
-  },
-  {
-    id: '4',
-    name: 'Slice Limão',
-    price: 89.90,
-    discount: 5,
-    quantity: 28,
-    image: 'https://images.unsplash.com/photo-1596392301391-e8622b210bd4?w=200&h=200&fit=crop'
-  },
-  {
-    id: '5',
-    name: 'Slice Uva',
-    price: 89.90,
-    discount: 15,
-    quantity: 28,
-    image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200&h=200&fit=crop'
-  },
-  {
-    id: '6',
-    name: 'Slice Morango',
-    price: 89.90,
-    discount: 5,
-    quantity: 28,
-    image: 'https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=200&h=200&fit=crop'
-  },
-  {
-    id: '7',
-    name: 'Slice Maracujá',
-    price: 89.90,
-    discount: 20,
-    quantity: 28,
-    image: 'https://images.unsplash.com/photo-1546548970-71785318a17b?w=200&h=200&fit=crop'
-  },
-  {
-    id: '8',
-    name: 'Slice Pêssego',
-    price: 89.90,
-    discount: 5,
-    quantity: 28,
-    image: 'https://images.unsplash.com/photo-1595124245030-41448b199d6d?w=200&h=200&fit=crop'
-  },
-  {
-    id: '9',
-    name: 'Slice Manga',
-    price: 89.90,
-    discount: 10,
-    quantity: 28,
-    image: 'https://images.unsplash.com/photo-1553279768-865429fa0078?w=200&h=200&fit=crop'
-  },
-  {
-    id: '10',
-    name: 'Slice Abacaxi',
-    price: 89.90,
-    discount: 5,
-    quantity: 28,
-    image: 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?w=200&h=200&fit=crop'
-  },
-  {
-    id: '11',
-    name: 'Slice Melancia',
-    price: 89.90,
-    discount: 15,
-    quantity: 28,
-    image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=200&h=200&fit=crop'
-  },
-  {
-    id: '12',
-    name: 'Slice Coco',
-    price: 89.90,
-    discount: 5,
-    quantity: 28,
-    image: 'https://images.unsplash.com/photo-1581375321224-79da6fd32f6e?w=200&h=200&fit=crop'
-  }
-];
+interface Order {
+  id: string;
+  client_name: string;
+  total: number;
+  status: string;
+  created_at: string;
+}
 
 export default function OrdersScreen() {
   const { banners } = useBannerStore();
@@ -128,6 +38,11 @@ export default function OrdersScreen() {
   const fadeAnim = useSharedValue(1);
   const screenWidth = Dimensions.get('window').width;
   const { navigateTo } = useNavigation();
+  const { products, loading: productsLoading, error: productsError } = useProducts();
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [representanteCodigo, setRepresentanteCodigo] = useState<string | null>(null);
 
   const menuItems: MenuItem[] = [
     { 
@@ -163,14 +78,32 @@ export default function OrdersScreen() {
 
     const interval = setInterval(() => {
       fadeAnim.value = withSequence(
-        withTiming(0, { duration: 300 }),
-        withDelay(100, withTiming(1, { duration: 300 }))
+        withTiming(0, { duration: 500 }),
+        withDelay(100, withTiming(1, { duration: 500 }))
       );
       setCurrentBanner((prev) => (prev + 1) % banners.length);
-    }, 5000);
+    }, 18000);
 
     return () => clearInterval(interval);
   }, [banners]);
+
+  useEffect(() => {
+    const fetchRepresentanteCodigo = async () => {
+      try {
+        const codigosStr = await AsyncStorage.getItem('codigosRepresentante');
+        if (codigosStr) {
+          const codigosArray = JSON.parse(codigosStr);
+          if (codigosArray.length > 0) {
+            // Pegar o último código do array
+            setRepresentanteCodigo(codigosArray[codigosArray.length - 1]);
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar código do representante:', error);
+      }
+    };
+    fetchRepresentanteCodigo();
+  }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: fadeAnim.value,
@@ -188,10 +121,9 @@ export default function OrdersScreen() {
     navigateTo('/sync-orders');
   };
 
-  const [brands, setBrands] = useState<Brand[]>([]);
-
   useEffect(() => {
     fetchBrands();
+    fetchOrders();
   }, []);
 
   const fetchBrands = async () => {
@@ -205,6 +137,42 @@ export default function OrdersScreen() {
       setBrands((data as Brand[]) || []);
     }
   };
+
+  const fetchOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setOrders(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar pedidos:', error);
+      alert('Erro ao buscar pedidos. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const acceleratorProducts = products.filter(product => product.is_accelerator);
+
+  const renderOrderItem = ({ item }: { item: Order }) => (
+    <TouchableOpacity
+      style={styles.orderCard}
+      onPress={() => router.push(`/orders/${item.id}`)}
+    >
+      <View style={styles.orderInfo}>
+        <Text style={styles.orderClient}>{item.client_name}</Text>
+        <Text style={styles.orderTotal}>R$ {item.total.toFixed(2)}</Text>
+        <Text style={styles.orderStatus}>{item.status}</Text>
+        <Text style={styles.orderDate}>
+          {new Date(item.created_at).toLocaleDateString('pt-BR')}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
@@ -225,36 +193,30 @@ export default function OrdersScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity style={styles.shareButton} onPress={handleSyncPress}>
-            <Share2 size={24} color="#003B71" />
+            <Image source={require('../../assets/images/integrar.png')} style={{ width: 60, height: 60 }} />
           </TouchableOpacity>
         </View>
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeText}>Bem-vindo</Text>
-          <Text style={styles.userName}>Vendedor</Text>
+          <Text style={styles.userName}>Vendedor{representanteCodigo ? ` ${representanteCodigo}` : ''}</Text>
         </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {banners && banners.length > 0 && banners[currentBanner] && (
-          <Animated.View style={[styles.bannerContainer, animatedStyle]}>
+          <Animated.View style={[styles.bannerContainer, { width: screenWidth }, animatedStyle]}>
             <Image
-              source={{ uri: banners[currentBanner].image }}
-              style={styles.bannerImage}
+              source={typeof banners[currentBanner].image === 'string' ? { uri: banners[currentBanner].image } : banners[currentBanner].image}
+              style={[styles.bannerImage, { width: screenWidth }]}
+              resizeMode="contain"
             />
-            <View style={[
-              styles.bannerContent,
-              { backgroundColor: banners[currentBanner].backgroundColor + '99' }
-            ]}>
-              <Text style={styles.bannerTitle}>{banners[currentBanner].title}</Text>
-              <Text style={styles.bannerSubtitle}>{banners[currentBanner].subtitle}</Text>
-            </View>
             <View style={styles.bannerIndicators}>
               {banners.map((_, index) => (
                 <View
                   key={index}
                   style={[
                     styles.indicator,
-                    { backgroundColor: index === currentBanner ? '#FFFFFF' : 'rgba(255, 255, 255, 0.5)' }
+                    { backgroundColor: index === currentBanner ? '#000000' : 'rgba(0, 0, 0, 0.3)' }
                   ]}
                 />
               ))}
@@ -298,14 +260,14 @@ export default function OrdersScreen() {
             showsHorizontalScrollIndicator={false} 
             style={styles.productsScroll}
           >
-            {mockProducts.slice(0, 6).map((product) => (
+            {acceleratorProducts.slice(0, 6).map((product) => (
               <TouchableOpacity 
                 key={product.id} 
                 style={styles.productItem}
                 onPress={() => navigateTo('/(tabs)/products' as any)}
               >
                 <Image 
-                  source={{ uri: product.image }} 
+                  source={{ uri: product.image_url }} 
                   style={styles.productImage}
                 />
                 <View style={styles.productInfo}>
@@ -314,16 +276,9 @@ export default function OrdersScreen() {
                     <Text style={styles.productPrice}>
                       R$ {product.price.toFixed(2)}
                     </Text>
-                    {product.discount > 0 && (
-                      <View style={styles.discountBadge}>
-                        <Text style={styles.discountText}>
-                          -{product.discount}%
-                        </Text>
-                      </View>
-                    )}
                   </View>
                   <Text style={styles.productQuantity}>
-                    {product.quantity} unidades
+                    {product.box_size} unidades
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -338,6 +293,29 @@ export default function OrdersScreen() {
           >
             <Text style={styles.orderButtonText}>Fazer Pedido</Text>
           </MovingBorderButton>
+        </View>
+
+        <View style={styles.ordersSection}>
+          <SectionHeader 
+            title="Pedidos" 
+            onViewAll={() => navigateTo('/orders' as any)}
+          />
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Carregando pedidos...</Text>
+            </View>
+          ) : orders.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>Nenhum pedido encontrado.</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={orders}
+              renderItem={renderOrderItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.orderList}
+            />
+          )}
         </View>
       </ScrollView>
     </View>
@@ -378,13 +356,11 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: Platform.OS === 'web' ? 16 : 48,
     paddingHorizontal: 16,
-    paddingBottom: 16,
     backgroundColor: '#FFFFFF',
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginBottom: 16,
   },
   shareButton: {
     width: 40,
@@ -408,33 +384,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-Bold',
   },
   bannerContainer: {
-    margin: 16,
-    borderRadius: 16,
+    width: '100%',
+    borderRadius: 40,
     overflow: 'hidden',
-    height: 200,
+    aspectRatio: 3.3,
+    alignSelf: 'center',
   },
   bannerImage: {
     width: '100%',
     height: '100%',
     position: 'absolute',
-  },
-  bannerContent: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 16,
-  },
-  bannerTitle: {
-    fontSize: 24,
-    color: '#FFFFFF',
-    fontFamily: 'Montserrat-Bold',
-    marginBottom: 4,
-  },
-  bannerSubtitle: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontFamily: 'Montserrat-Regular',
   },
   bannerIndicators: {
     position: 'absolute',
@@ -458,13 +417,12 @@ const styles = StyleSheet.create({
   brandCard: {
     marginRight: 16,
     alignItems: 'center',
-  },
-  brandImage: {
-    width: 80,
-    height: 80,
-    resizeMode: 'contain',
-    borderRadius: 12,
     backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -473,40 +431,48 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
       },
       android: {
-        elevation: 2,
+        elevation: 3,
       },
       web: {
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
       }
     }),
   },
+  brandImage: {
+    width: 60,
+    height: 40,
+    resizeMode: 'contain',
+    marginBottom: 8,
+  },
   brandName: {
-    marginTop: 8,
-    fontSize: 14,
+    fontSize: 12,
     color: '#003B71',
-    fontFamily: 'Montserrat-Regular',
+    fontFamily: 'Montserrat-Medium',
+    textAlign: 'center',
   },
   productsSection: {
     marginBottom: 24,
   },
   productsScroll: {
-    paddingLeft: 16,
+    marginTop: 12,
+    paddingHorizontal: 16,
   },
   productItem: {
-    width: 160,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
     marginRight: 16,
-    overflow: 'hidden',
+    width: 150,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: '#000000',
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
       },
       android: {
-        elevation: 4,
+        elevation: 3,
       },
       web: {
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
@@ -515,37 +481,27 @@ const styles = StyleSheet.create({
   },
   productImage: {
     width: '100%',
-    height: 160,
+    height: 100,
+    resizeMode: 'contain',
+    marginBottom: 8,
   },
   productInfo: {
-    padding: 12,
+    width: '100%',
   },
   productName: {
     fontSize: 14,
     color: '#003B71',
-    fontFamily: 'Montserrat-Medium',
-    marginBottom: 8,
+    fontFamily: 'Montserrat-Bold',
+    marginBottom: 4,
   },
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     marginBottom: 4,
   },
   productPrice: {
     fontSize: 16,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Bold',
-  },
-  discountBadge: {
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  discountText: {
-    fontSize: 12,
-    color: '#FFFFFF',
+    color: '#0088CC',
     fontFamily: 'Montserrat-Bold',
   },
   productQuantity: {
@@ -558,15 +514,76 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   orderButton: {
-    backgroundColor: '#003B71',
-    borderRadius: 8,
-    padding: 16,
+    height: 56,
+    backgroundColor: '#0088CC',
+    borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   orderButtonText: {
-    fontSize: 16,
     color: '#FFFFFF',
+    fontSize: 18,
     fontFamily: 'Montserrat-Bold',
+  },
+  ordersSection: {
+    marginBottom: 24,
+  },
+  orderList: {
+    padding: 16,
+  },
+  orderCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  orderInfo: {
+    flex: 1,
+  },
+  orderClient: {
+    fontSize: 16,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
+    marginBottom: 4,
+  },
+  orderTotal: {
+    fontSize: 16,
+    color: '#0088CC',
+    fontFamily: 'Montserrat-Bold',
+    marginBottom: 4,
+  },
+  orderStatus: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+    marginBottom: 4,
+  },
+  orderDate: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+    textAlign: 'center',
   },
   menuButtonText: {
     fontSize: 24,

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image, Alert } from 'react-native';
 import { router } from 'expo-router';
 import RNPickerSelect from 'react-native-picker-select';
 import { supabase } from '../../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const logoDmuller = require('../../assets/images/logoDmuller.png');
 
@@ -26,6 +27,13 @@ export default function Login() {
     }
   }, []);
 
+  useEffect(() => {
+    if (teams.length > 0 && selectedTeam === undefined) {
+      console.log('Definindo equipe padrão:', teams[0].code);
+      setSelectedTeam(teams[0].code);
+    }
+  }, [teams, selectedTeam]);
+
   const fetchTeams = async () => {
     try {
       const { data, error } = await supabase
@@ -37,15 +45,45 @@ export default function Login() {
         console.error('Erro ao buscar equipes:', error);
         return;
       }
-
+      console.log('Equipes carregadas:', data);
       setTeams(data || []);
     } catch (error) {
       console.error('Erro:', error);
     }
   };
 
-  const handleLogin = () => {
-    router.replace('/(app)/orders');
+  const handleLogin = async () => {
+    console.log('Selected Team:', selectedTeam);
+    console.log('Code:', code);
+
+    if (!selectedTeam) {
+      Alert.alert('Erro', 'Por favor, selecione uma equipe.');
+      return;
+    }
+
+    if (!code) {
+      Alert.alert('Erro', 'Por favor, insira o código do representante.');
+      return;
+    }
+
+    try {
+      // Lógica para salvar o código do representante no AsyncStorage
+      const codigosSalvosStr = await AsyncStorage.getItem('codigosRepresentante');
+      let codigosArray = codigosSalvosStr ? JSON.parse(codigosSalvosStr) : [];
+
+      if (!codigosArray.includes(code)) {
+        codigosArray.push(code);
+        await AsyncStorage.setItem('codigosRepresentante', JSON.stringify(codigosArray));
+        console.log('Código do representante salvo:', code);
+      } else {
+        console.log('Código do representante já existe:', code);
+      }
+
+      router.push('/(app)/orders');
+    } catch (error) {
+      console.error('Erro ao tentar login ou salvar código:', error);
+      Alert.alert('Erro', 'Ocorreu um erro ao tentar fazer login. Tente novamente.');
+    }
   };
 
   return (
@@ -60,7 +98,10 @@ export default function Login() {
             <Text style={styles.label}>Equipe:</Text>
             <View style={styles.pickerContainer}>
               <RNPickerSelect
-                onValueChange={(value) => setSelectedTeam(value || undefined)}
+                onValueChange={(value) => {
+                  console.log('RNPickerSelect value changed:', value);
+                  setSelectedTeam(value || undefined);
+                }}
                 value={selectedTeam}
                 items={teams.map(team => ({
                   label: team.name,

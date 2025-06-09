@@ -1,69 +1,121 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView } from 'react-native';
-import { ArrowLeft, Search, Building2 } from 'lucide-react-native';
-import { useOrderStore } from '../../../store/useOrderStore';
-import { mockClients, Client } from '../../../data/mocks';
-import { useNavigation } from '../../../hooks/useNavigation';
+import { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Image } from 'react-native';
+import { router } from 'expo-router';
+import { supabase } from '../../../lib/supabase';
+import { useOrderStore, Client, ClientPaymentTerm, PaymentTerm } from '../../../store/useOrderStore';
 
 export default function SelectClient() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { goBack, navigateTo } = useNavigation();
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredClients = mockClients.filter(client =>
-    Object.values(client).some(value =>
-      String(value).toLowerCase().includes(searchQuery.toLowerCase())
-    )
+  const { setClient } = useOrderStore();
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select(`
+          id, 
+          name, 
+          code, 
+          fantasy_name, 
+          cnpj, 
+          created_at, 
+          address,
+          payment_terms:client_payment_terms(
+            id,
+            prazo_id,
+            is_default,
+            prazo:prazos(
+              id,
+              prazo
+            )
+          )
+        `)
+
+      if (error) throw error;
+
+      const formattedClients = data.map((client: any) => ({
+        ...client,
+        payment_terms: client.payment_terms?.map((term: any) => ({
+          ...term,
+          prazo: {
+            id: term.prazo.id,
+            description: term.prazo.prazo
+          }
+        }))
+      }));
+
+      setClients(formattedClients as Client[] || []);
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredClients = clients.filter(client =>
+    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.fantasy_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.cnpj.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleSelectClient = (client: Client) => {
-    useOrderStore.getState().setClient(client);
-    navigateTo('/(tabs)/create-order/payment-method', { 
-      clientId: client.id,
-      clientName: client.name
-    });
+    // A estrutura de client já está formatada com o prazo correto neste ponto
+    setClient(client);
+    router.push('/create-order/payment-method');
   };
+
+  const renderClientItem = ({ item }: { item: Client }) => (
+    <TouchableOpacity
+      style={styles.clientItem}
+      onPress={() => handleSelectClient(item)}
+    >
+      <View style={styles.clientInfo}>
+        <View style={styles.firstLine}>
+          <Text style={styles.clientCode}>{item.code}</Text>
+          <Text style={styles.clientFantasy}>{item.fantasy_name}</Text>
+        </View>
+        <Text style={styles.clientCnpj}>CNPJ: {item.cnpj}</Text>
+        {item.address && <Text style={styles.clientCnpj}>Endereço: {item.address}</Text>}
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} style={styles.backButton}>
-          <ArrowLeft size={24} color="#003B71" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Image source={require('../../../assets/images/voltar.png')} style={{ width: 40, height: 40 }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Selecionar Cliente</Text>
       </View>
 
       <View style={styles.searchContainer}>
-        <Search size={20} color="#666666" style={styles.searchIcon} />
+        <View style={styles.searchInputContainer}>
+          <Image source={require('../../../assets/images/buscar.png')} style={{ width: 30, height: 30 }} />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar clientes..."
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholderTextColor="#999999"
         />
+        </View>
       </View>
 
-      <ScrollView style={styles.content}>
-        {filteredClients.map((client) => (
-          <TouchableOpacity
-            key={client.id}
-            style={styles.clientCard}
-            onPress={() => handleSelectClient(client)}
-          >
-            <View style={styles.clientIcon}>
-              <Building2 size={24} color="#003B71" />
-            </View>
-            <View style={styles.clientInfo}>
-              <View style={styles.clientHeader}>
-                <Text style={styles.clientCode}>{client.code}</Text>
-                <Text style={styles.clientName}>{client.name}</Text>
-              </View>
-              <Text style={styles.clientCnpj}>{client.cnpj}</Text>
-              <Text style={styles.clientAddress}>{client.address}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <FlatList
+        data={filteredClients}
+        renderItem={renderClientItem}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+      />
     </View>
   );
 }
@@ -74,98 +126,61 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   header: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 48,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
+    marginRight: 16,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 24,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
-    marginLeft: 8,
   },
   searchContainer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    margin: 16,
-    padding: 12,
+    backgroundColor: '#F5F5F5',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-  },
-  searchIcon: {
-    marginRight: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   searchInput: {
     flex: 1,
+    marginLeft: 12,
     fontSize: 16,
-    color: '#333333',
+    color: '#003B71',
     fontFamily: 'Montserrat-Regular',
   },
-  content: {
-    flex: 1,
+  list: {
     padding: 16,
   },
-  clientCard: {
-    flexDirection: 'row',
+  clientItem: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-      }
-    }),
-  },
-  clientIcon: {
-    width: 48,
-    height: 48,
-    backgroundColor: '#F0F7FF',
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
   },
   clientInfo: {
-    flex: 1,
+    gap: 4,
   },
-  clientHeader: {
+  firstLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    gap: 8,
   },
   clientCode: {
-    fontSize: 12,
-    color: '#666666',
-    fontFamily: 'Montserrat-Medium',
-    backgroundColor: '#F0F7FF',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginRight: 8,
+    fontSize: 14,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
   },
-  clientName: {
+  clientFantasy: {
     fontSize: 16,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
@@ -174,11 +189,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     fontFamily: 'Montserrat-Regular',
-    marginBottom: 4,
   },
-  clientAddress: {
-    fontSize: 12,
-    color: '#999999',
+  clientDocument: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+  },
+  clientEmail: {
+    fontSize: 14,
+    color: '#666666',
     fontFamily: 'Montserrat-Regular',
   },
 });

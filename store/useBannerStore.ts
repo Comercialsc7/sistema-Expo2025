@@ -25,7 +25,7 @@ export const useBannerStore = create<BannerStore>((set) => ({
       title: "Promoção Especial",
       subtitle: "Até 30% de desconto em bebidas",
       backgroundColor: "#FF6B6B",
-      image: "https://images.unsplash.com/photo-1613204341606-01471b9310c0?w=800&auto=format&fit=crop&q=60",
+      image: require('../assets/images/girosorte.gif'),
       order: 0
     },
     {
@@ -33,7 +33,7 @@ export const useBannerStore = create<BannerStore>((set) => ({
       title: "Novos Produtos",
       subtitle: "Confira os lançamentos",
       backgroundColor: "#4ECDC4",
-      image: "https://images.unsplash.com/photo-1581683705068-ca8f49fc2f97?w=800&auto=format&fit=crop&q=60",
+      image: require('../assets/images/comprapremiada.gif'),
       order: 1
     },
   ],

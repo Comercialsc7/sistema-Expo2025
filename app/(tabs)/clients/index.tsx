@@ -1,47 +1,63 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView, FlatList } from 'react-native';
-import { Search, Plus, ArrowLeft } from 'lucide-react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, Image } from 'react-native';
 import { router } from 'expo-router';
-import { mockClients } from '../../../data/mocks';
-import { useNavigation } from '../../../hooks/useNavigation';
+import { supabase } from '../../../lib/supabase';
 
 interface Client {
   id: string;
-  code: string;
-  fantasyName?: string;
-  cnpj: string;
   name: string;
+  code: string;
+  fantasy_name: string;
+  cnpj: string;
+  id_prazos: number;
+  created_at: string | null;
 }
 
-export default function ClientManagement() {
+export default function ClientsScreen() {
+  const [clients, setClients] = useState<Client[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const { goBack, navigateTo } = useNavigation();
+  const [loading, setLoading] = useState(true);
 
-  const filteredClients = mockClients.filter(client =>
-    Object.values(client).some(value =>
-      String(value).toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
-  const handleAddClient = () => {
-    navigateTo('/clients/client-management');
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, name, code, fantasy_name, cnpj, id_prazos, created_at')
+        .order('name');
+
+      if (error) throw error;
+
+      setClients(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error);
+      alert('Erro ao buscar clientes. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const filteredClients = clients.filter(
+    (client) =>
+      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.fantasy_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.cnpj.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const renderClientItem = ({ item }: { item: Client }) => (
-    <TouchableOpacity 
-      key={item.id}
+    <TouchableOpacity
       style={styles.clientCard}
-      onPress={() => console.log('Client selected:', item.id)}
+      onPress={() => router.push(`/clients/client-management?id=${item.id}`)}
     >
       <View style={styles.clientInfo}>
-        <View style={styles.topLine}>
-          <Text style={styles.code}>{item.code}</Text>
-          <Text style={styles.name} numberOfLines={1}>{item.fantasyName}</Text>
-        </View>
-        <View style={styles.bottomLine}>
-          <Text style={styles.cnpj}>{item.cnpj}</Text>
-          <Text style={styles.legalName} numberOfLines={1}>{item.name}</Text>
-        </View>
+        <Text style={styles.clientName}>{item.name}</Text>
+        <Text style={styles.clientCode}>Código: {item.code}</Text>
+        <Text style={styles.clientFantasy}>Fantasia: {item.fantasy_name}</Text>
+        <Text style={styles.clientCnpj}>CNPJ: {item.cnpj}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -49,32 +65,46 @@ export default function ClientManagement() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} style={styles.backButton}>
-          <ArrowLeft size={24} color="#003B71" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Image source={require('../../../assets/images/voltar.png')} style={{ width: 40, height: 40 }} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Clientes</Text>
-        <TouchableOpacity style={styles.addButton} onPress={handleAddClient}>
-          <Plus size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Text style={styles.headerTitle}>Clientes</Text>
+        </View>
       </View>
 
       <View style={styles.searchContainer}>
-        <Search size={20} color="#666" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar clientes..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor="#999"
-        />
+        <View style={styles.searchInputContainer}>
+          <Image source={require('../../../assets/images/buscar.png')} style={{ width: 30, height: 30 }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar clientes..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
       </View>
 
-      <FlatList
-        data={filteredClients}
-        renderItem={renderClientItem}
-        keyExtractor={(item) => item.id}
-        style={styles.listContainer}
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Carregando clientes...</Text>
+        </View>
+      ) : filteredClients.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            {searchQuery
+              ? 'Nenhum cliente encontrado para esta busca.'
+              : 'Nenhum cliente cadastrado.'}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredClients}
+          renderItem={renderClientItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.clientList}
+        />
+      )}
     </View>
   );
 }
@@ -85,15 +115,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   header: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 48,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-    marginLeft: Platform.OS === 'web' ? 56 : 0,
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
   },
   backButton: {
     marginRight: 16,
@@ -102,108 +128,84 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
-  },
-  addButton: {
-    backgroundColor: '#0088CC',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#0088CC',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0 4px 14px rgba(0, 136, 204, 0.3)',
-      }
-    }),
+    textAlign: 'center',
   },
   searchContainer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    margin: 16,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-  },
-  searchIcon: {
-    marginRight: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
   },
   searchInput: {
     flex: 1,
+    height: 40,
+    marginLeft: 8,
     fontSize: 16,
-    fontFamily: 'Montserrat-Regular',
     color: '#333333',
+    fontFamily: 'Montserrat-Regular',
   },
-  listContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
+  clientList: {
+    padding: 16,
   },
   clientCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    marginBottom: 8,
-    padding: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      }
-    }),
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
   },
   clientInfo: {
-    gap: 4,
+    flex: 1,
   },
-  topLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  bottomLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  code: {
-    width: 50,
-    fontSize: 14,
+  clientName: {
+    fontSize: 16,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
+    marginBottom: 4,
   },
-  name: {
+  clientCode: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+    marginBottom: 2,
+  },
+  clientFantasy: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+    marginBottom: 2,
+  },
+  clientCnpj: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+  },
+  loadingContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
     fontSize: 16,
-    color: '#333333',
-    fontFamily: 'Montserrat-Bold',
-  },
-  cnpj: {
-    width: 150,
-    fontSize: 14,
     color: '#666666',
     fontFamily: 'Montserrat-Regular',
   },
-  legalName: {
+  emptyContainer: {
     flex: 1,
-    fontSize: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  emptyText: {
+    fontSize: 16,
     color: '#666666',
     fontFamily: 'Montserrat-Regular',
+    textAlign: 'center',
   },
 });

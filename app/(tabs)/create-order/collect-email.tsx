@@ -8,20 +8,20 @@ export default function CollectEmailScreen() {
 
   const handleSubmit = () => {
     if (!email) {
-      alert('Por favor, insira um e-mail válido');
+      alert('Por favor, insira um email válido');
       return;
     }
 
-    // Validação básica de e-mail
+    // Validação básica de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      alert('Por favor, insira um e-mail válido');
+      alert('Por favor, insira um email válido');
       return;
     }
 
     router.push({
       pathname: '/(tabs)/create-order/confirmation',
-      params: { 
+      params: {
         ...params,
         email: email
       }
@@ -31,13 +31,14 @@ export default function CollectEmailScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Finalizar Pedido</Text>
+        <View style={styles.headerIcon} />
+        <Text style={styles.headerTitle}>Email para Confirmação</Text>
       </View>
       <View style={styles.content}>
-        <Text style={styles.instruction}>Digite seu e-mail para receber o resumo do pedido</Text>
+        <Text style={styles.instruction}>Por favor, insira seu email para receber a confirmação do pedido.</Text>
         <TextInput
           style={styles.input}
-          placeholder="Seu e-mail"
+          placeholder="Seu email"
           placeholderTextColor="#999"
           value={email}
           onChangeText={setEmail}
@@ -49,7 +50,7 @@ export default function CollectEmailScreen() {
           style={styles.submitButton}
           onPress={handleSubmit}
         >
-          <Text style={styles.submitButtonText}>Enviar E-mail</Text>
+          <Text style={styles.submitButtonText}>Enviar Email</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -59,29 +60,35 @@ export default function CollectEmailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1560A8',
-    borderRadius: 16,
+    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 48,
+    paddingTop: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  headerIcon: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#003B71',
+    marginRight: 10,
   },
   headerTitle: {
     fontSize: 22,
-    color: '#fff',
+    color: '#003B71',
     fontFamily: 'Montserrat-Bold',
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
     alignItems: 'center',
   },
   instruction: {
-    color: '#fff',
-    fontSize: 15,
-    fontFamily: 'Montserrat-Bold',
+    color: '#666666',
+    fontSize: 16,
+    fontFamily: 'Montserrat-Regular',
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -98,13 +105,13 @@ const styles = StyleSheet.create({
   submitButton: {
     width: '100%',
     height: 50,
-    backgroundColor: '#FFB300',
+    backgroundColor: '#0088CC',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   submitButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontFamily: 'Montserrat-Bold',
   },

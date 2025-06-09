@@ -47,7 +47,10 @@ export default function AppLayout() {
     <View style={styles.container}>
       <Stack screenOptions={{
         headerShown: false,
-      }} />
+      }}>
+        <Stack.Screen name="orders" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
 
       <Sidebar
         isOpen={isSidebarOpen}

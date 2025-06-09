@@ -1,85 +1,166 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Platform, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
-import { ArrowLeft, Upload } from 'lucide-react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import InputGroup from '../../../components/shared/InputGroup';
+import { supabase } from '../../../lib/supabase';
 import { optimizeImage } from '../../../lib/imageUtils';
 
 export default function BrandManagement() {
-  const [brandData, setBrandData] = useState({
-    name: '',
-    code: '',
-    image: null as string | null,
-  });
+  const [name, setName] = useState('');
+  const [code, setCode] = useState('');
+  const [image, setImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+  const handleImagePick = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Precisamos da permissão para acessar a galeria.');
+        return;
+      }
 
-    if (!result.canceled) {
-      const optimizedUri = await optimizeImage(result.assets[0].uri, {
-        maxWidth: 800,
-        maxHeight: 800,
-        quality: 0.8
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
       });
-      setBrandData(prev => ({ ...prev, image: optimizedUri }));
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const photoUri = result.assets[0].uri;
+        if (photoUri) {
+          const optimizedUri = await optimizeImage(photoUri, {
+            maxWidth: 800,
+            maxHeight: 800,
+            quality: 0.8
+          });
+          setImage(optimizedUri);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao selecionar imagem:', error);
+      alert('Erro ao selecionar imagem. Tente novamente.');
     }
   };
 
-  const handleSave = () => {
-    console.log('Brand data:', brandData);
-    router.back();
+  const handleSubmit = async () => {
+    if (!name || !code) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      let imageUrl = null;
+      if (image) {
+        const fileName = `${Date.now()}.jpg`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('brands')
+          .upload(fileName, {
+            uri: image,
+            type: 'image/jpeg',
+            name: fileName,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('brands')
+          .getPublicUrl(fileName);
+
+        imageUrl = publicUrl;
+      }
+
+      const { error: insertError } = await supabase
+        .from('brands')
+        .insert([
+          {
+            name,
+            code,
+            image_url: imageUrl,
+          },
+        ]);
+
+      if (insertError) throw insertError;
+
+      router.back();
+    } catch (err) {
+      console.error('Erro ao salvar marca:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao salvar marca');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#003B71" />
+          <View style={{ width: 24, height: 24, backgroundColor: '#003B71' }} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cadastro de Marca</Text>
+        <Text style={styles.headerTitle}>Nova Marca</Text>
       </View>
 
-      <View style={styles.content}>
-        <TouchableOpacity style={styles.imageUpload} onPress={pickImage}>
-          {brandData.image ? (
-            <Image source={{ uri: brandData.image }} style={styles.previewImage} resizeMode="contain" />
-          ) : (
-            <View style={styles.uploadPlaceholder}>
-              <Upload size={32} color="#003B71" />
-              <Text style={styles.uploadText}>Upload do Logo</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.form}>
-          <InputGroup
-            label="Nome da Marca"
-            value={brandData.name}
-            onChangeText={(text: string) => setBrandData(prev => ({ ...prev, name: text }))}
-            placeholder="Ex: Slice"
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Nome da Marca</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Digite o nome da marca"
+            />
+          </View>
 
-          <InputGroup
-            label="Código"
-            value={brandData.code}
-            onChangeText={(text: string) => setBrandData(prev => ({ ...prev, code: text }))}
-            placeholder="Ex: SLI"
-            maxLength={3}
-            autoCapitalize="characters"
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Código</Text>
+            <TextInput
+              style={styles.input}
+              value={code}
+              onChangeText={setCode}
+              placeholder="Digite o código da marca"
+            />
+          </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Salvar Marca</Text>
+          <View style={styles.imageSection}>
+            <Text style={styles.label}>Logo da Marca</Text>
+            <TouchableOpacity
+              style={styles.imageUploadButton}
+              onPress={handleImagePick}
+            >
+              {image ? (
+                <Image source={{ uri: image }} style={styles.uploadedImage} />
+              ) : (
+                <View style={styles.uploadPlaceholder}>
+                  <View style={{ width: 24, height: 24, backgroundColor: '#003B71' }} />
+                  <Text style={styles.uploadText}>Adicionar Logo</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {error && (
+            <Text style={styles.errorText}>{error}</Text>
+          )}
+
+          <TouchableOpacity
+            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitButtonText}>Salvar Marca</Text>
+            )}
           </TouchableOpacity>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -87,7 +168,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-  } as ViewStyle,
+  },
   header: {
     backgroundColor: '#FFFFFF',
     padding: 16,
@@ -96,19 +177,37 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E5E5',
     flexDirection: 'row',
     alignItems: 'center',
-  } as ViewStyle,
+  },
   backButton: {
     marginRight: 16,
-  } as ViewStyle,
+  },
   headerTitle: {
     fontSize: 24,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
-  } as TextStyle,
+  },
   content: {
     padding: 16,
-  } as ViewStyle,
-  imageUpload: {
+  },
+  form: {
+    gap: 16,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 16,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Medium',
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  imageSection: {
     width: '100%',
     height: 240,
     backgroundColor: '#FFFFFF',
@@ -132,37 +231,48 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
       }
     }),
-  } as ViewStyle,
+  },
+  imageUploadButton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+  },
   uploadPlaceholder: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F8F9FA',
-  } as ViewStyle,
+  },
   uploadText: {
     marginTop: 12,
     color: '#003B71',
     fontSize: 16,
     fontFamily: 'Montserrat-Medium',
-  } as TextStyle,
-  previewImage: {
+  },
+  uploadedImage: {
     width: '100%',
     height: '100%',
     backgroundColor: '#F8F9FA',
-  } as ImageStyle,
-  form: {
-    gap: 16,
-  } as ViewStyle,
-  saveButton: {
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+    fontFamily: 'Montserrat-Medium',
+  },
+  submitButton: {
     backgroundColor: '#0088CC',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
-  } as ViewStyle,
-  saveButtonText: {
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#E5E5E5',
+  },
+  submitButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontFamily: 'Montserrat-Bold',
-  } as TextStyle,
+  },
 });

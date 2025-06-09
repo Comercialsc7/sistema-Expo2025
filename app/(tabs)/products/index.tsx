@@ -1,70 +1,115 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Platform } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, Image } from 'react-native';
 import { router } from 'expo-router';
-import { Plus, Search } from 'lucide-react-native';
-import { mockProducts, Product } from '../../../data/mocks';
+import { supabase } from '../../../lib/supabase';
 
-const Diamond = require('../../../assets/images/diamond.png');
+interface Product {
+  id: string;
+  name: string;
+  code: string;
+  image_url: string | null;
+  price: number;
+  box_size: number;
+  is_accelerator: boolean;
+}
 
 export default function ProductsScreen() {
-  const handleAddProduct = () => {
-    router.push('/products/product-management');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar produtos:', error);
+      alert('Erro ao buscar produtos. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const renderProduct = ({ item }: { item: Product }) => (
+  const filteredProducts = products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const renderProductItem = ({ item }: { item: Product }) => (
     <TouchableOpacity 
       style={styles.productCard}
-      onPress={() => router.push({
-        pathname: '/products/product-management',
-        params: { id: item.id }
-      })}
+      onPress={() => console.log('Produto clicado: ', item.id)}
     >
-      {item.isAccelerator ? (
-        <>
-          <Image source={{ uri: item.image }} style={styles.productImage} />
-          <View style={styles.productInfo}>
-            <Text style={styles.productName}>{item.name}</Text>
-            <Text style={styles.productCode}>Código: {item.code}</Text>
-            <View style={styles.productDetails}>
-              <Text style={styles.productPrice}>R$ {item.price.toFixed(2)}</Text>
-            </View>
-          </View>
-        </>
+      {item.image_url ? (
+        <Image source={{ uri: item.image_url }} style={styles.productImage} />
       ) : (
-        <View style={styles.productInfoNoImage}>
-          <Text style={styles.productName}>{item.name}</Text>
-          <Text style={styles.productCode}>Código: {item.code}</Text>
-          <View style={styles.productDetails}>
-            <Text style={styles.productPrice}>R$ {item.price.toFixed(2)}</Text>
-          </View>
+        <View style={styles.productImagePlaceholder}>
+          <View style={{ width: 24, height: 24, backgroundColor: '#003B71' }} />
         </View>
       )}
+      <View style={styles.productInfo}>
+        <Text style={styles.productName}>{item.name}</Text>
+        <Text style={styles.productCode}>Código: {item.code}</Text>
+        <Text style={styles.productPrice}>R$ {item.price.toFixed(2)}</Text>
+      </View>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Produtos</Text>
-        <TouchableOpacity style={styles.addButton} onPress={handleAddProduct}>
-          <Plus size={24} color="#FFFFFF" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Image source={require('../../../assets/images/voltar.png')} style={styles.backIcon} />
         </TouchableOpacity>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Text style={styles.headerTitle}>Produtos</Text>
+        </View>
+        <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.searchContainer}>
-        <Search size={20} color="#666" style={styles.searchIcon} />
-        <Text style={styles.searchPlaceholder}>Buscar produtos...</Text>
+        <View style={styles.searchInputContainer}>
+          <Image source={require('../../../assets/images/buscar.png')} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar produtos..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
       </View>
 
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Carregando produtos...</Text>
+        </View>
+      ) : filteredProducts.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            {searchQuery
+              ? 'Nenhum produto encontrado para esta busca.'
+              : 'Nenhum produto cadastrado.'}
+          </Text>
+        </View>
+      ) : (
       <FlatList
-        data={mockProducts}
-        renderItem={renderProduct}
-        keyExtractor={item => item.id}
+          data={filteredProducts}
+          renderItem={renderProductItem}
+          keyExtractor={(item) => item.id}
         contentContainerStyle={styles.productList}
-        showsVerticalScrollIndicator={false}
-        numColumns={Platform.OS === 'web' ? 2 : 1}
-        columnWrapperStyle={Platform.OS === 'web' ? { gap: 16 } : undefined}
       />
+      )}
     </View>
   );
 }
@@ -75,115 +120,84 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   header: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 48,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-    marginLeft: Platform.OS === 'web' ? 56 : 0,
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
   },
   headerTitle: {
     fontSize: 24,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
+    textAlign: 'center',
+    flex: 1,
   },
-  addButton: {
-    backgroundColor: '#0088CC',
+  backButton: {
+    padding: 8,
+  },
+  backIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      }
-    }),
+    resizeMode: 'contain',
   },
   searchContainer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    margin: 16,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
   },
   searchIcon: {
-    marginRight: 12,
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
+    marginRight: 8,
   },
-  searchPlaceholder: {
-    color: '#999999',
+  searchInput: {
+    flex: 1,
+    height: 40,
+    marginLeft: 8,
     fontSize: 16,
+    color: '#333333',
     fontFamily: 'Montserrat-Regular',
   },
   productList: {
     padding: 16,
   },
   productCard: {
-    flex: Platform.OS === 'web' ? 1 : undefined,
+    flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    marginBottom: 16,
-    overflow: 'hidden',
-    flexDirection: 'row',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      }
-    }),
+    padding: 12,
+    marginBottom: 12,
   },
   productImage: {
-    width: 120,
-    height: 120,
-    resizeMode: 'cover',
+    width: 80,
+    height: 80,
+    borderRadius: 8,
   },
-  acceleratorBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: '#003B71',
-    padding: 8,
-    borderRadius: 20,
+  productImagePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   productInfo: {
-    padding: 16,
-  },
-  productInfoNoImage: {
-    padding: 16,
     flex: 1,
+    marginLeft: 12,
+    justifyContent: 'center',
   },
   productName: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
     marginBottom: 4,
@@ -192,21 +206,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     fontFamily: 'Montserrat-Regular',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   productPrice: {
     fontSize: 16,
-    color: '#333333',
-    fontFamily: 'Montserrat-SemiBold',
-    marginBottom: 4,
+    color: '#0088CC',
+    fontFamily: 'Montserrat-Bold',
   },
-  productQuantity: {
-    fontSize: 14,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
     color: '#666666',
     fontFamily: 'Montserrat-Regular',
   },
-  productDetails: {
-    flexDirection: 'row',
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+    textAlign: 'center',
   },
 });

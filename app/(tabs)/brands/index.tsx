@@ -1,94 +1,94 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView, Image, ViewStyle, TextStyle, ImageStyle, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Image, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '../../../lib/supabase';
 
 interface Brand {
   id: string;
   name: string;
+  code: string;
   image_url: string | null;
 }
 
 export default function BrandsScreen() {
-  const [searchQuery, setSearchQuery] = useState('');
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchBrands();
   }, []);
 
   const fetchBrands = async () => {
-    const { data, error } = await supabase
-      .from('brands')
-      .select('id, name, image_url');
+    try {
+      const { data, error } = await supabase
+        .from('brands')
+        .select('*')
+        .order('name');
 
-    if (error) {
+      if (error) throw error;
+      setBrands(data || []);
+    } catch (error) {
       console.error('Erro ao buscar marcas:', error);
-    } else {
-      setBrands((data as Brand[]) || []);
+    } finally {
+      setLoading(false);
     }
   };
 
   const filteredBrands = brands.filter(brand =>
-    Object.values(brand).some(value =>
-      String(value).toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    brand.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    brand.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddBrand = () => {
-    router.push('/brands/brand-management');
-  };
-
   const renderBrandItem = ({ item }: { item: Brand }) => (
-    <TouchableOpacity 
-      key={item.id}
-      style={[styles.brandCard, Platform.OS === 'web' && styles.brandCardWeb]}
-      onPress={() => router.push({
-        pathname: '/brands/brand-management',
-        params: { id: item.id }
-      })}
+    <TouchableOpacity
+      style={styles.brandItem}
+      onPress={() => router.push(`/brands/${item.id}`)}
     >
-      <View style={[styles.logoContainer, Platform.OS === 'web' && styles.logoContainerWeb]}>
-        <Image 
-          source={item.image_url ? { uri: item.image_url } : undefined}
-          style={styles.brandLogo}
-          resizeMode="contain"
-        />
-      </View>
-      <View style={[styles.brandInfo, Platform.OS === 'web' && styles.brandInfoWeb]}>
-        <Text style={[styles.brandName, Platform.OS === 'web' && styles.brandNameWeb]}>{item.name}</Text>
+      {item.image_url ? (
+        <Image source={{ uri: item.image_url }} style={styles.brandImage} />
+      ) : (
+        <View style={styles.brandImagePlaceholder}>
+          <Text style={styles.brandInitial}>{item.code}</Text>
+        </View>
+      )}
+      <View style={styles.brandInfo}>
+        <Text style={styles.brandName}>{item.name}</Text>
+        <Text style={styles.brandCode}>{item.code}</Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <View style={[styles.container, Platform.OS === 'web' && styles.containerWeb]}>
-      <View style={[styles.header, Platform.OS === 'web' && styles.headerWeb]}>
-        <Text style={[styles.headerTitle, Platform.OS === 'web' && styles.headerTitleWeb]}>Marcas</Text>
-        <TouchableOpacity style={[styles.addButton, Platform.OS === 'web' && styles.addButtonWeb]} onPress={handleAddBrand}>
-          {/* Ícone Plus removido */}
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Marcas</Text>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push('/brands/new')}
+        >
+          <View style={{ width: 24, height: 24, backgroundColor: '#FFFFFF' }} />
         </TouchableOpacity>
       </View>
 
-      <View style={[styles.searchContainer, Platform.OS === 'web' && styles.searchContainerWeb]}>
-        {/* Ícone Search removido */}
-        <TextInput
-          style={[styles.searchInput, Platform.OS === 'web' && styles.searchInputWeb]}
-          placeholder="Buscar marcas..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor="#999"
-        />
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputContainer}>
+          <View style={{ width: 24, height: 24, backgroundColor: '#003B71' }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar marcas..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
       </View>
 
       <FlatList
         data={filteredBrands}
         renderItem={renderBrandItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.brandsGrid, Platform.OS === 'web' && styles.brandsGridWeb]}
-        columnWrapperStyle={Platform.OS === 'web' ? styles.brandsGridColumnWrapper : null}
-        numColumns={Platform.OS === 'web' ? 3 : 1}
-        style={styles.listContainer}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
@@ -98,148 +98,89 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-  } as ViewStyle,
-  containerWeb: {
-    cursor: 'default',
-  } as ViewStyle,
+  },
   header: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 48,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-    marginLeft: Platform.OS === 'web' ? 56 : 0,
-  } as ViewStyle,
-  headerWeb: {
-    cursor: 'default',
-  } as ViewStyle,
-  headerTitle: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  title: {
     fontSize: 24,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
-  } as TextStyle,
-  headerTitleWeb: {
-    userSelect: 'none',
-  } as TextStyle,
+  },
   addButton: {
-    backgroundColor: '#0088CC',
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 10,
+    backgroundColor: '#0088CC',
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#0088CC',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0 4px 14px rgba(0, 136, 204, 0.3)',
-      }
-    }),
-  } as ViewStyle,
-  addButtonWeb: {
-    cursor: 'pointer',
-  } as ViewStyle,
+  },
   searchContainer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Regular',
+  },
+  list: {
+    padding: 16,
+  },
+  brandItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    margin: 16,
-    padding: 12,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-  } as ViewStyle,
-  searchContainerWeb: {
-    cursor: 'default',
-  } as ViewStyle,
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: 'Montserrat-Regular',
-    color: '#333333',
-  } as TextStyle,
-  searchInputWeb: {
-    userSelect: 'auto',
-    outlineStyle: 'none',
-  } as TextStyle,
-  listContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
-  } as ViewStyle,
-  listContainerWeb: {
-    cursor: 'default',
-  } as ViewStyle,
-  brandsGrid: {
-    justifyContent: 'space-between',
-    gap: 16,
-  } as ViewStyle,
-  brandsGridWeb: {
-    cursor: 'default',
-  } as ViewStyle,
-  brandsGridColumnWrapper: {
-    gap: 16,
-  } as ViewStyle,
-  brandCard: {
-    width: Platform.OS === 'web' ? '32%' : '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-      }
-    }),
-  } as ViewStyle,
-  brandCardWeb: {
-    cursor: 'pointer',
-  } as ViewStyle,
-  logoContainer: {
-    height: 165,
-    backgroundColor: '#F8F9FA',
+    padding: 16,
+    marginBottom: 12,
+  },
+  brandImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#F5F5F5',
+  },
+  brandImagePlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
-  } as ViewStyle,
-  logoContainerWeb: {
-    cursor: 'default',
-  } as ViewStyle,
-  brandLogo: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
-  } as ImageStyle,
+  },
+  brandInitial: {
+    fontSize: 24,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
+  },
   brandInfo: {
-    padding: 16,
-  } as ViewStyle,
-  brandInfoWeb: {
-    cursor: 'default',
-  } as ViewStyle,
+    marginLeft: 16,
+    flex: 1,
+  },
   brandName: {
     fontSize: 18,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
-    marginBottom: 4,
-  } as TextStyle,
-  brandNameWeb: {
-    userSelect: 'none',
-  } as TextStyle,
+  },
+  brandCode: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+    marginTop: 4,
+  },
 });

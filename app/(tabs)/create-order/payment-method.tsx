@@ -1,79 +1,95 @@
-import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, CreditCard, Calendar } from 'lucide-react-native';
-import { usePaymentTermsStore } from '../../../store/usePaymentTermsStore';
-import { useOrderStore } from '../../../store/useOrderStore';
+import { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
+import { router } from 'expo-router';
+import { useOrderStore, ClientPaymentTerm } from '../../../store/useOrderStore';
+import { PaymentTerm } from '../../../store/useOrderStore';
 
 export default function PaymentMethodScreen() {
-  const { paymentTerms } = usePaymentTermsStore();
-  const params = useLocalSearchParams();
-  const clientId = params.clientId as string;
-  const clientName = params.clientName as string;
+  const { client, setPaymentTerm: setOrderPaymentTerm } = useOrderStore();
+  const [selectedTerm, setSelectedTerm] = useState<PaymentTerm | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleSelectPaymentTerm = (termId: string) => {
-    const term = paymentTerms.find(t => t.id === termId);
-    if (term) {
-      useOrderStore.getState().setPaymentTerm(term);
-      router.push({
-        pathname: '/(tabs)/create-order',
-        params: {
-          clientId,
-          clientName,
-        }
-      });
+  useEffect(() => {
+    if (client?.payment_terms && client.payment_terms.length > 0) {
+      const defaultClientTerm = client.payment_terms.find(term => term.is_default);
+      if (defaultClientTerm && defaultClientTerm.prazo) {
+        const defaultTerm = defaultClientTerm.prazo;
+        setSelectedTerm(defaultTerm);
+        setOrderPaymentTerm(defaultTerm);
+      }
+      setLoading(false);
+    }
+  }, [client?.payment_terms]);
+
+  const handleSelectTerm = (term: ClientPaymentTerm) => {
+    if (term.prazo) {
+      setSelectedTerm(term.prazo);
     }
   };
 
+  const handleContinue = () => {
+    if (!selectedTerm) {
+      alert('Selecione uma condição de pagamento');
+      return;
+    }
+    setOrderPaymentTerm(selectedTerm);
+    router.push('/create-order');
+  };
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#003B71" />
+          <Image source={require('../../../assets/images/voltar.png')} style={{ width: 40, height: 40 }} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Forma de Pagamento</Text>
+        <Text style={styles.headerTitle}>Condição de Pagamento</Text>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.clientInfo}>
-          <Text style={styles.clientLabel}>Cliente</Text>
-          <Text style={styles.clientName}>{clientName}</Text>
-        </View>
-
-        <View style={styles.paymentSection}>
-          <Text style={styles.sectionTitle}>Selecione o Prazo de Pagamento</Text>
-          
-          {paymentTerms.map((term) => (
-            <TouchableOpacity
-              key={term.id}
-              style={styles.paymentOption}
-              onPress={() => handleSelectPaymentTerm(term.id)}
-            >
-              <View style={styles.paymentIcon}>
-                <Calendar size={24} color="#003B71" />
-              </View>
-              <View style={styles.paymentInfo}>
-                <Text style={styles.paymentTitle}>{term.description}</Text>
-                <Text style={styles.paymentDescription}>
-                  Pagamento em {term.days} dias
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-
-          <TouchableOpacity style={styles.creditCardOption}>
-            <View style={styles.paymentIcon}>
-              <CreditCard size={24} color="#003B71" />
-            </View>
-            <View style={styles.paymentInfo}>
-              <Text style={styles.paymentTitle}>Cartão de Crédito</Text>
-              <Text style={styles.paymentDescription}>
-                Pagamento à vista
+      <ScrollView style={styles.content}>
+        {client && (
+          <View style={styles.clientInfo}>
+            <Text style={styles.clientName}>Cliente: {client.name}</Text>
+            {selectedTerm && (
+              <Text style={styles.clientDefaultTerm}>
+                Prazo Padrão: {selectedTerm.description}
               </Text>
-            </View>
-          </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        <View style={styles.paymentTerms}>
+          <Text style={styles.sectionTitle}>Selecione a condição de pagamento</Text>
+          {loading ? (
+            <Text style={styles.loadingText}>Carregando prazos...</Text>
+          ) : !client?.payment_terms || client.payment_terms.length === 0 ? (
+            <Text style={styles.emptyText}>Nenhuma condição de pagamento disponível para este cliente.</Text>
+          ) : (
+            client.payment_terms.map(term => (
+              <TouchableOpacity
+                key={term.id}
+                style={[
+                  styles.termCard,
+                  selectedTerm?.id === term.prazo?.id && styles.selectedTermCard
+                ]}
+                onPress={() => handleSelectTerm(term)}
+              >
+                <Text style={styles.termDescription}>{term.prazo?.description}</Text>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.continueButton, !selectedTerm && styles.continueButtonDisabled]}
+          onPress={handleContinue}
+          disabled={!selectedTerm}
+        >
+          <Text style={styles.continueButtonText}>Continuar</Text>
+        </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -85,11 +101,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     padding: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 48,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    backgroundColor: '#FFFFFF',
   },
   backButton: {
     marginRight: 16,
@@ -100,101 +113,83 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-Bold',
   },
   content: {
+    flex: 1,
     padding: 16,
-    gap: 24,
   },
   clientInfo: {
     backgroundColor: '#FFFFFF',
-    padding: 16,
     borderRadius: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-      }
-    }),
-  },
-  clientLabel: {
-    fontSize: 14,
-    color: '#666666',
-    fontFamily: 'Montserrat-Regular',
-    marginBottom: 4,
+    padding: 16,
+    marginBottom: 24,
   },
   clientName: {
     fontSize: 18,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
+    marginBottom: 4,
   },
-  paymentSection: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    gap: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-      }
-    }),
+  clientDefaultTerm: {
+    fontSize: 16,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+  },
+  paymentTerms: {
+    gap: 12,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
     marginBottom: 8,
   },
-  paymentOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+  termCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     padding: 16,
-    borderRadius: 8,
-  },
-  paymentIcon: {
-    width: 48,
-    height: 48,
-    backgroundColor: '#E5F0FF',
-    borderRadius: 24,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginRight: 16,
   },
-  paymentInfo: {
-    flex: 1,
+  selectedTermCard: {
+    backgroundColor: '#E6F3FF',
+    borderWidth: 1,
+    borderColor: '#0088CC',
   },
-  paymentTitle: {
+  termDescription: {
     fontSize: 16,
     color: '#003B71',
     fontFamily: 'Montserrat-Bold',
-    marginBottom: 4,
   },
-  paymentDescription: {
-    fontSize: 14,
-    color: '#666666',
-    fontFamily: 'Montserrat-Regular',
-  },
-  creditCardOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+  footer: {
+    backgroundColor: '#FFFFFF',
     padding: 16,
-    borderRadius: 8,
-    opacity: 0.5, // Indicando que está desabilitado
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  continueButton: {
+    backgroundColor: '#0088CC',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  continueButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+  },
+  continueButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontFamily: 'Montserrat-Bold',
+  },
+  loadingText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+    color: '#666666',
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+    color: '#666666',
   },
 }); 

@@ -1,176 +1,216 @@
-import { useMemo } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, TextInput } from 'react-native';
-import { ArrowLeft, Plus, Minus, Trash2 } from 'lucide-react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, TextInput } from 'react-native';
+import { router } from 'expo-router';
 import { useOrderStore } from '../../../store/useOrderStore';
-import { useState } from 'react';
-import { useNavigation } from '../../../hooks/useNavigation';
 
-const Diamond = require('../../../assets/images/diamond.png');
+interface OrderItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  image?: string;
+  isAccelerator: boolean;
+  box: number;
+  discount: number;
+}
 
 export default function OrderSummary() {
-  const { items: orderItems, removeItem, updateItemQuantity, client, paymentTerm } = useOrderStore();
-  const { goBack, navigateTo } = useNavigation();
-  const params = useLocalSearchParams();
-  const prazoDescricaoParam = params.prazoDescricao as string | undefined;
+  console.log('OrderSummary component carregado e atualizado!');
+  const { items, client, paymentTerm, removeItem, updateItemQuantity, clearOrder } = useOrderStore();
+  const [loading, setLoading] = useState(false);
 
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingItemQty, setEditingItemQty] = useState<string>('');
+  useEffect(() => {
+    // Optionally clear order when component mounts for a new order flow
+    // or load existing order if continuing from a previous session
+    // For now, we assume a new order is being created or continued from product selection.
+  }, []);
 
-  // Cálculos dinâmicos
-  const subtotal = useMemo(() => orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0), [orderItems]);
-  const aceleradores = useMemo(() => orderItems.filter(item => item.isAccelerator).length, [orderItems]);
-  const desconto = useMemo(() => orderItems.reduce((sum, item) => sum + ((item.price * item.quantity) * (item.discount / 100)), 0), [orderItems]);
-  const total = subtotal - desconto;
-  const prazo = paymentTerm?.days || 0;
-
-  const handleQtyChange = (idx: number, delta: number) => {
-    const item = orderItems[idx];
-    const newQty = Math.max(1, item.quantity + delta);
-    updateItemQuantity(idx, newQty);
+  const handleGoBack = () => {
+    router.back();
   };
 
-  const handleRemoveItem = (idx: number) => {
-    removeItem(idx);
+  const handleAddItem = () => {
+    router.push('/create-order/product-search');
   };
 
-  const handleEditQuantity = (item: any) => {
-    setEditingItemId(item.id);
-    setEditingItemQty(item.quantity.toString());
+  const handleRemoveItem = (index: number) => {
+    removeItem(index);
   };
 
-  const handleSaveQuantity = (item: any) => {
-    const newQty = parseInt(editingItemQty, 10);
-    if (!isNaN(newQty) && newQty >= 1) {
-      const itemIndex = orderItems.findIndex(orderItem => orderItem.id === item.id);
-      if (itemIndex !== -1) {
-        updateItemQuantity(itemIndex, newQty);
-      }
+  const handleQuantityChange = (index: number, change: number) => {
+    const currentQuantity = items[index].quantity;
+    const newQuantity = Math.max(1, currentQuantity + change);
+    updateItemQuantity(index, newQuantity);
+  };
+
+  const handleQuantityInputChange = (index: number, text: string) => {
+    const parsedQuantity = parseInt(text, 10);
+    if (!isNaN(parsedQuantity) && parsedQuantity >= 0) {
+      updateItemQuantity(index, parsedQuantity);
+    } else if (text === '') {
+      updateItemQuantity(index, 0); // Allow clearing input
     }
-    setEditingItemId(null);
-    setEditingItemQty('');
+  };
+
+  const calculateSubtotal = () => {
+    return items.reduce((total, item) => total + (item.price * item.quantity), 0);
+  };
+
+  const calculateAcceleratorItems = () => {
+    return items.filter(item => item.isAccelerator).length;
+  };
+
+  const calculateDiscount = () => {
+    // This is a simplified discount calculation.
+    // In a real scenario, you might have complex discount rules.
+    return items.reduce((total, item) => total + (item.discount * item.quantity), 0);
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() - calculateDiscount();
+  };
+
+  const handleFinalizeOrder = () => {
+    if (items.length === 0) {
+      alert('Adicione pelo menos um item ao pedido');
+      return;
+    }
+
+    const subtotal = calculateSubtotal();
+    const itens = items.length;
+    const desconto = calculateDiscount();
+    const total = calculateTotal();
+    const prazo = paymentTerm?.prazo_dias || 0;
+
+    console.log('Preparando para navegar para order-summary-v2 com parâmetros:', {
+      subtotal: subtotal.toFixed(2),
+      itens: itens.toString(),
+      desconto: desconto.toFixed(2),
+      total: total.toFixed(2),
+      prazo: prazo.toString(),
+    });
+
+    router.push('/create-order/order-summary', {
+      subtotal: subtotal.toFixed(2),
+      itens: itens.toString(),
+      desconto: desconto.toFixed(2),
+      total: total.toFixed(2),
+      prazo: prazo.toString(),
+    });
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} style={styles.backButton}>
-          <ArrowLeft size={24} color="#003B71" />
+        <TouchableOpacity onPress={handleGoBack} style={styles.headerActionButton}>
+          <Image source={require('../../../assets/images/voltar.png')} style={styles.iconButton} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Pedido</Text>
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={() => {
-            if (client && paymentTerm) {
-              navigateTo('/(tabs)/create-order/product-search', {
-                clientId: client.id,
-                clientName: client.name,
-                paymentTermId: paymentTerm.id
-              });
-            } else {
-              navigateTo('/(tabs)/create-order/select-client');
-            }
-          }}
-        >
-          <Plus size={24} color="#fff" />
+        <Text style={styles.title}>Pedido</Text>
+        <TouchableOpacity onPress={handleAddItem} style={styles.headerActionButton}>
+          <Image source={require('../../../assets/images/adicionar.png')} style={styles.iconButton} />
         </TouchableOpacity>
       </View>
-      <View style={styles.contentArea}>
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+
+      <ScrollView style={styles.content}>
+        {items.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>
+              Nenhum item adicionado ao pedido
+            </Text>
+          </View>
+        ) : (
           <View style={styles.itemsList}>
-            {orderItems.map((item, idx) => (
-              <View key={idx} style={styles.itemCard}>
+            {items.map((item, index) => (
+              <View key={item.id + index} style={styles.itemCard}>
+                <Image source={{ uri: item.image || 'https://via.placeholder.com/60' }} style={styles.itemImage} />
                 <View style={styles.itemInfo}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={styles.itemCode}>{item.id}</Text>
-                    {item.isAccelerator && <Image source={Diamond} style={{ width: 30, height: 30, marginLeft: 4 }} />}
+                  <View style={styles.itemNameContainer}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    {item.isAccelerator && (
+                      <Image source={require('../../../assets/images/diamond.png')} style={styles.acceleratorIconImage} />
+                    )}
                   </View>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemBox}>{item.box}</Text>
-                  <Text style={styles.itemPrice}>
-                    <Text>R$ {item.price.toFixed(2)}</Text>
-                    <Text style={styles.itemDiscount}> -5%</Text>
-                  </Text>
+                  <Text style={styles.itemDescription}>CX {item.box} unids.</Text>
+                  <View style={styles.priceContainer}>
+                    <Text style={styles.itemPrice}>R$ {item.price.toFixed(2)}</Text>
+                    {item.discount > 0 && (
+                      <Text style={styles.itemDiscount}>-{((item.discount / item.price) * 100).toFixed(0)}%</Text>
+                    )}
+                  </View>
                 </View>
-                <View style={styles.qtyControl}>
-                  <TouchableOpacity onPress={() => handleQtyChange(idx, -1)}>
-                    <Minus size={18} color="#003B71" />
+                <View style={styles.itemActions}>
+                  <TouchableOpacity
+                    style={styles.quantityButton}
+                    onPress={() => handleQuantityChange(index, -1)}
+                  >
+                    <Text>-</Text>
                   </TouchableOpacity>
-                  {editingItemId === item.id ? (
-                    <TextInput
-                      style={styles.qtyInput}
-                      keyboardType="number-pad"
-                      value={editingItemQty}
-                      onChangeText={setEditingItemQty}
-                      onBlur={() => handleSaveQuantity(item)}
-                      autoFocus
-                    />
-                  ) : (
-                    <TouchableOpacity onPress={() => handleEditQuantity(item)}>
-                      <Text style={styles.qtyText}>{item.quantity}</Text>
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity onPress={() => handleQtyChange(idx, 1)}>
-                    <Plus size={18} color="#003B71" />
+                  <TextInput
+                    style={styles.quantityInput}
+                    keyboardType="numeric"
+                    value={String(item.quantity)}
+                    onChangeText={(text) => handleQuantityInputChange(index, text)}
+                  />
+                  <TouchableOpacity
+                    style={styles.quantityButton}
+                    onPress={() => handleQuantityChange(index, 1)}
+                  >
+                    <Text>+</Text>
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity onPress={() => handleRemoveItem(idx)} style={{ marginLeft: 8 }}>
-                  <Trash2 size={20} color="#FF3B30" />
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleRemoveItem(index)}
+                >
+                  <Image source={require('../../../assets/images/lixeira.png')} style={styles.deleteIcon} />
                 </TouchableOpacity>
               </View>
             ))}
           </View>
-          <View style={styles.summaryBox}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal</Text>
-              <Text style={styles.summaryValue}>R$ {subtotal.toFixed(2)}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Itens Aceleradores</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={[styles.summaryValue, { marginRight: 4 }]}>{aceleradores}</Text>
-                <Image source={Diamond} style={{ width: 30, height: 30 }} />
-              </View>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Desconto</Text>
-              <Text style={[styles.summaryValue, { color: '#FF3B30' }]}>R$ {desconto.toFixed(2)}</Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={[styles.summaryRow, { marginBottom: 0 }]}> 
-              <Text style={styles.summaryTotalLabel}>Total</Text>
-              <Text style={styles.summaryTotalValue}>R$ {total.toFixed(2)}</Text>
-            </View>
-            <View style={styles.summaryPrazoRow}>
-              <Text style={styles.summaryPrazo}>Prazo de pagamento</Text>
-              <Text style={styles.summaryPrazoValor}>
-                {prazoDescricaoParam || paymentTerm?.description || 'Não definido'}
-              </Text>
-            </View>
-            
-            <TouchableOpacity
-              style={[styles.finishButton, !prazo && styles.finishButtonDisabled]} 
-              onPress={() => {
-                if (prazo) {
-                  router.push({
-                    pathname: '/(tabs)/create-order/complete',
-                    params: {
-                      subtotal: subtotal.toFixed(2),
-                      itens: orderItems.length,
-                      desconto: desconto.toFixed(2),
-                      total: total.toFixed(2),
-                      prazo: prazo,
-                    }
-                  });
-                }
-              }}
-              disabled={!prazo}
-            >
-              <Text style={styles.finishButtonText}>Finalizar Pedido</Text>
-            </TouchableOpacity>
+        )}
+      </ScrollView>
+
+      {items.length > 0 && (
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Subtotal</Text>
+            <Text style={styles.summaryValue}>R$ {calculateSubtotal().toFixed(2)}</Text>
           </View>
-        </ScrollView>
-      </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Itens Aceleradores</Text>
+            <Text style={styles.summaryValueWithIcon}>
+              <Image source={require('../../../assets/images/diamond.png')} style={styles.summaryIconImage} /> {calculateAcceleratorItems()}
+            </Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Desconto</Text>
+            <Text style={styles.summaryValue}>R$ {calculateDiscount().toFixed(2)}</Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryTotalLabel}>Total</Text>
+            <Text style={styles.summaryTotalValue}>R$ {calculateTotal().toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Prazo de pagamento</Text>
+            <Text style={styles.summaryValue}>{paymentTerm?.description || 'Não selecionado'}</Text>
+          </View>
+          
+          {/* Adicionando a caixa "Faltam" */}
+          {/* <View style={styles.missingBox}>
+            <Text style={styles.missingAmount}>Faltam</Text>
+            <Text style={styles.missingValue}>R$ 1.736,30</Text>
+            <Text style={styles.missingDescription}>para você concorrer a uma moto 0km</Text>
+          </View> */}
+
+          <TouchableOpacity
+            style={styles.finalizeButton}
+            onPress={handleFinalizeOrder}
+          >
+            <Text style={styles.finalizeButtonText}>Visualizar Pedido</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -178,108 +218,147 @@ export default function OrderSummary() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FB',
+    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 12,
-    backgroundColor: 'transparent',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
   },
-  backButton: {
-    backgroundColor: '#F0F2F5',
-    borderRadius: 20,
-    padding: 4,
+  headerActionButton: {
+    padding: 8,
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
+  title: {
+    fontSize: 20,
     color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
   },
-  addButton: {
-    backgroundColor: '#0094FF',
-    borderRadius: 20,
-    padding: 6,
-  },
-  contentArea: {
+  content: {
     flex: 1,
-    paddingHorizontal: 8,
-    marginBottom: 8,
-    justifyContent: 'space-between',
+    padding: 16,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    color: '#666666',
+    textAlign: 'center',
   },
   itemsList: {
+    gap: 12,
+    marginBottom: 16,
   },
   itemCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 10,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    padding: 16,
+    alignItems: 'center',
+  },
+  itemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
   },
   itemInfo: {
     flex: 1,
+    justifyContent: 'center',
   },
-  itemCode: {
-    fontWeight: 'bold',
-    color: '#003B71',
-    fontSize: 14,
-  },
-  itemName: {
-    fontSize: 14,
-    color: '#003B71',
-    fontWeight: '600',
-  },
-  itemBox: {
-    fontSize: 12,
-    color: '#888',
-  },
-  itemPrice: {
-    fontSize: 15,
-    color: '#222',
-    fontWeight: 'bold',
-  },
-  itemDiscount: {
-    color: '#FF3B30',
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
-  qtyControl: {
+  itemNameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F2F5',
+  },
+  itemName: {
+    fontSize: 16,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
+    marginRight: 4,
+  },
+  acceleratorIconImage: {
+    width: 30,
+    height: 30,
+    marginLeft: 4,
+  },
+  itemDescription: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+    marginTop: 2,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  itemPrice: {
+    fontSize: 16,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
+  },
+  itemDiscount: {
+    fontSize: 14,
+    color: '#FF3B30',
+    fontFamily: 'Montserrat-Regular',
+    marginLeft: 8,
+  },
+  itemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  quantityButton: {
+    width: 32,
+    height: 32,
     borderRadius: 16,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 4,
   },
-  qtyText: {
+  quantityInput: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginHorizontal: 8,
     color: '#003B71',
-  },
-  qtyInput: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'Montserrat-Bold',
     marginHorizontal: 8,
-    color: '#003B71',
-    minWidth: 40,
+    width: 40,
     textAlign: 'center',
-    paddingVertical: 0,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 8,
+    paddingVertical: 4,
   },
-  summaryBox: {
+  deleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
+  deleteIcon: {
+    width: 18,
+    height: 18,
+  },
+  summaryContainer: {
     backgroundColor: '#003B71',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 18,
-    marginTop: 8,
+    padding: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -288,64 +367,82 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   summaryLabel: {
-    color: '#fff',
-    fontSize: 15,
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontFamily: 'Montserrat-Regular',
   },
   summaryValue: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontFamily: 'Montserrat-Bold',
   },
-  summaryDivider: {
-    borderBottomColor: '#fff',
+  summaryValueWithIcon: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontFamily: 'Montserrat-Bold',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  summaryIconImage: {
+    width: 30,
+    height: 30,
+    marginRight: 4,
+  },
+  divider: {
+    borderBottomColor: '#FFFFFF',
     borderBottomWidth: 1,
     opacity: 0.3,
     marginVertical: 8,
   },
   summaryTotalLabel: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 18,
+    color: '#FFFFFF',
+    fontFamily: 'Montserrat-Bold',
   },
   summaryTotalValue: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  summaryPrazoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  summaryPrazo: {
-    color: '#fff',
-    fontSize: 13,
-    opacity: 0.8,
-  },
-  summaryPrazoValor: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  finishButton: {
-    backgroundColor: '#FCB32B',
-    borderRadius: 12,
-    marginTop: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    width: '100%',
-  },
-  finishButtonText: {
+    fontSize: 18,
     color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 17,
-    textTransform: 'uppercase',
+    fontFamily: 'Montserrat-Bold',
   },
-  finishButtonDisabled: {
-    backgroundColor: '#CCCCCC',
+  finalizeButton: {
+    backgroundColor: '#0088CC',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 16,
   },
-  scrollViewContent: {
-    flexGrow: 1,
-    justifyContent: 'space-between',
+  finalizeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontFamily: 'Montserrat-Bold',
   },
+  iconButton: {
+    width: 40,
+    height: 40,
+  },
+  /* missingBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  missingAmount: {
+    fontSize: 20,
+    color: '#FF0000',
+    fontFamily: 'Montserrat-Bold',
+  },
+  missingValue: {
+    fontSize: 24,
+    color: '#FF0000',
+    fontFamily: 'Montserrat-Bold',
+    marginTop: 4,
+  },
+  missingDescription: {
+    fontSize: 16,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+    textAlign: 'center',
+    marginTop: 4,
+  }, */
 });
