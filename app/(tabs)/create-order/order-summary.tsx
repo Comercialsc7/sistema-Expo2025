@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSpinResultsStore } from '../../../store/useSpinResultsStore';
 import { useNavigation } from '../../../hooks/useNavigation';
 import { useOrderStore, OrderItem } from '../../../store/useOrderStore';
@@ -18,12 +18,14 @@ export default function OrderSummaryScreen() {
   const { items: orderItems, client, paymentTerm, clearOrder } = useOrderStore();
   const { addCachedOrder } = useCachedOrdersStore();
   const { results, clearResults } = useSpinResultsStore();
+  const params = useLocalSearchParams();
+  const email = params.email as string;
 
   const subtotal = orderItems.reduce((sum, item: OrderItem) => sum + (item.price * item.quantity), 0);
   const desconto = orderItems.reduce((sum, item: OrderItem) => sum + (item.discount * item.quantity), 0);
   const total = subtotal - desconto;
   const itens = orderItems.length;
-  const prazo = paymentTerm?.prazo_dias || 0;
+  const prazo = paymentTerm?.description || '0';
 
   const girosGanhos = Math.floor(total / 3000);
   const girosRestantes = girosGanhos - results.length;
@@ -55,7 +57,14 @@ export default function OrderSummaryScreen() {
     addCachedOrder(orderToCache);
     clearOrder();
 
-    navigateTo('/sync-orders');
+    navigateTo('/create-order/confirmation', {
+      subtotal: subtotal.toFixed(2),
+      itens: itens.toString(),
+      desconto: desconto.toFixed(2),
+      total: total.toFixed(2),
+      prazo: prazo.toString(),
+      email: email,
+    });
   };
 
   useEffect(() => {

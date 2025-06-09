@@ -36,7 +36,7 @@ export default function CreateOrderLayout() {
       <Stack.Screen
         name="collect-email"
         options={{
-          headerShown: true,
+          headerShown: false,
         }}
       />
       <Stack.Screen

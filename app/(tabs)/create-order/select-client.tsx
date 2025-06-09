@@ -46,7 +46,8 @@ export default function SelectClient() {
           ...term,
           prazo: {
             id: term.prazo.id,
-            description: term.prazo.prazo
+            description: term.prazo.prazo,
+            prazo_dias: term.prazo.prazo_dias
           }
         }))
       }));

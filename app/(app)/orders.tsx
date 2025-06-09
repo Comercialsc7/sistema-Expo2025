@@ -40,7 +40,6 @@ export default function OrdersScreen() {
   const { navigateTo } = useNavigation();
   const { products, loading: productsLoading, error: productsError } = useProducts();
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [representanteCodigo, setRepresentanteCodigo] = useState<string | null>(null);
 
@@ -123,7 +122,6 @@ export default function OrdersScreen() {
 
   useEffect(() => {
     fetchBrands();
-    fetchOrders();
   }, []);
 
   const fetchBrands = async () => {
@@ -138,41 +136,7 @@ export default function OrdersScreen() {
     }
   };
 
-  const fetchOrders = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setOrders(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar pedidos:', error);
-      alert('Erro ao buscar pedidos. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const acceleratorProducts = products.filter(product => product.is_accelerator);
-
-  const renderOrderItem = ({ item }: { item: Order }) => (
-    <TouchableOpacity
-      style={styles.orderCard}
-      onPress={() => router.push(`/orders/${item.id}`)}
-    >
-      <View style={styles.orderInfo}>
-        <Text style={styles.orderClient}>{item.client_name}</Text>
-        <Text style={styles.orderTotal}>R$ {item.total.toFixed(2)}</Text>
-        <Text style={styles.orderStatus}>{item.status}</Text>
-        <Text style={styles.orderDate}>
-          {new Date(item.created_at).toLocaleDateString('pt-BR')}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
 
   return (
     <View style={styles.container}>
@@ -295,28 +259,7 @@ export default function OrdersScreen() {
           </MovingBorderButton>
         </View>
 
-        <View style={styles.ordersSection}>
-          <SectionHeader 
-            title="Pedidos" 
-            onViewAll={() => navigateTo('/orders' as any)}
-          />
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Carregando pedidos...</Text>
-            </View>
-          ) : orders.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Nenhum pedido encontrado.</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={orders}
-              renderItem={renderOrderItem}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.orderList}
-            />
-          )}
-        </View>
+        <View style={{ height: 20 }} />
       </ScrollView>
     </View>
   );
@@ -525,17 +468,24 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Montserrat-Bold',
   },
-  ordersSection: {
-    marginBottom: 24,
+  menuButtonText: {
+    fontSize: 24,
+    color: '#003B71',
+    paddingHorizontal: 16,
   },
-  orderList: {
-    padding: 16,
+  shareButtonText: {
+    fontSize: 14,
+    color: '#003B71',
+    marginRight: 16,
   },
   orderCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   orderInfo: {
     flex: 1,
@@ -548,51 +498,19 @@ const styles = StyleSheet.create({
   },
   orderTotal: {
     fontSize: 16,
-    color: '#0088CC',
-    fontFamily: 'Montserrat-Bold',
-    marginBottom: 4,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Medium',
   },
   orderStatus: {
     fontSize: 14,
     color: '#666666',
     fontFamily: 'Montserrat-Regular',
-    marginBottom: 4,
+    marginTop: 4,
   },
   orderDate: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 12,
+    color: '#999999',
     fontFamily: 'Montserrat-Regular',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666666',
-    fontFamily: 'Montserrat-Regular',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666666',
-    fontFamily: 'Montserrat-Regular',
-    textAlign: 'center',
-  },
-  menuButtonText: {
-    fontSize: 24,
-    color: '#003B71',
-    paddingHorizontal: 16,
-  },
-  shareButtonText: {
-    fontSize: 14,
-    color: '#003B71',
-    marginRight: 16,
+    marginTop: 4,
   },
 }); 
