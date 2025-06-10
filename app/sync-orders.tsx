@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList, ActivityIndicator, Alert, Modal, Image } from 'react-native';
 import { useNavigation } from '../hooks/useNavigation';
-import { ArrowLeft, ArrowUp, ArrowDown, CircleCheck as CheckCircle, Circle as XCircle, Package, Calendar, Gift } from 'lucide-react-native';
 import { useCachedOrdersStore, CachedOrder } from '../store/useCachedOrdersStore';
+
+const closeIcon = require('../assets/images/x.png');
+const backIcon = require('../assets/images/voltar.png');
 
 export default function SyncOrdersScreen() {
   const { goBack } = useNavigation();
@@ -99,13 +101,16 @@ export default function SyncOrdersScreen() {
                 style={styles.closeButton}
                 onPress={() => setSelectedOrder(null)}
               >
-                <XCircle size={24} color="#003B71" />
+                <Image source={closeIcon} style={{ width: 24, height: 24 }} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody}>
               <View style={styles.detailSection}>
                 <Text style={styles.sectionTitle}>Informações do Cliente</Text>
+                {selectedOrder.sellerCode && (
+                  <Text style={styles.detailText}>Vendedor: {selectedOrder.sellerCode}</Text>
+                )}
                 <Text style={styles.detailText}>Código: {selectedOrder.client.code}</Text>
                 <Text style={styles.detailText}>Nome: {selectedOrder.client.name}</Text>
                 <Text style={styles.detailText}>CNPJ: {selectedOrder.client.cnpj}</Text>
@@ -114,7 +119,7 @@ export default function SyncOrdersScreen() {
               <View style={styles.detailSection}>
                 <Text style={styles.sectionTitle}>Condição de Pagamento</Text>
                 <Text style={styles.detailText}>
-                  {selectedOrder.paymentTerm.description} ({selectedOrder.paymentTerm.days} dias)
+                  {selectedOrder.paymentTerm.description} ({selectedOrder.paymentTerm.prazo_dias} dias)
                 </Text>
               </View>
 
@@ -155,7 +160,6 @@ export default function SyncOrdersScreen() {
                 <View style={styles.detailSection}>
                   <Text style={styles.sectionTitle}>Prêmio do Giro</Text>
                   <View style={styles.prizeContainer}>
-                    <Gift size={24} color="#003B71" />
                     <Text style={styles.prizeText}>{selectedOrder.spinPrize.description}</Text>
                   </View>
                   {selectedOrder.spinPrize.photo && (
@@ -178,11 +182,6 @@ export default function SyncOrdersScreen() {
     
     return (
       <View style={styles.syncStatus}>
-        {syncStatus === 'success' ? (
-          <CheckCircle size={24} color="#4CAF50" />
-        ) : (
-          <XCircle size={24} color="#FF3B30" />
-        )}
         <Text style={[
           styles.syncStatusText,
           { color: syncStatus === 'success' ? '#4CAF50' : '#FF3B30' }
@@ -197,7 +196,7 @@ export default function SyncOrdersScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={goBack} style={styles.backButton}>
-          <ArrowLeft size={24} color="#003B71" />
+          <Image source={backIcon} style={{ width: 24, height: 24 }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Sincronização de Pedidos</Text>
       </View>
@@ -221,7 +220,6 @@ export default function SyncOrdersScreen() {
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <>
-                  <ArrowUp size={24} color="#FFFFFF" style={styles.buttonIcon} />
                   <Text style={styles.buttonText}>Enviar Dados</Text>
                 </>
               )}
@@ -240,7 +238,6 @@ export default function SyncOrdersScreen() {
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <>
-                  <ArrowDown size={24} color="#FFFFFF" style={styles.buttonIcon} />
                   <Text style={styles.buttonText}>Receber Dados</Text>
                 </>
               )}
@@ -343,9 +340,6 @@ const styles = StyleSheet.create({
   receiveButton: {
     backgroundColor: '#03A9F4',
   },
-  buttonIcon: {
-    marginRight: 8,
-  },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
@@ -445,41 +439,41 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#003B71',
     marginBottom: 12,
   },
-  detailText: {
-    fontSize: 14,
-    color: '#333',
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#003B71',
     marginBottom: 8,
+  },
+  detailText: {
+    fontSize: 13,
+    color: '#333',
+    marginBottom: 4,
   },
   productItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
   },
   productName: {
     flex: 2,
-    fontSize: 14,
+    fontSize: 13,
     color: '#333',
   },
   productDetails: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
     textAlign: 'center',
   },
   productTotal: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#003B71',
     textAlign: 'right',
@@ -487,14 +481,14 @@ const styles = StyleSheet.create({
   valueRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   valueLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
   },
   valueAmount: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#003B71',
   },
@@ -502,18 +496,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8F9FB',
-    padding: 12,
+    padding: 10,
     borderRadius: 8,
   },
   prizeText: {
-    marginLeft: 8,
-    fontSize: 14,
+    marginLeft: 6,
+    fontSize: 13,
     color: '#333',
   },
   prizePhoto: {
     width: '100%',
-    height: 200,
-    marginTop: 12,
+    height: 150,
+    marginTop: 10,
     borderRadius: 8,
   },
 });
