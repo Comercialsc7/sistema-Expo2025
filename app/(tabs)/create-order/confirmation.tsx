@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { CheckCircle as CheckCircle2 } from 'lucide-react-native';
+import { CircleCheck } from 'lucide-react-native';
 import { useSpinResultsStore } from '../../../store/useSpinResultsStore';
 
 export default function OrderConfirmation() {
@@ -12,14 +12,14 @@ export default function OrderConfirmation() {
   const itens = Number(params.itens) || 0;
   const desconto = Number(params.desconto) || 0;
   const total = Number(params.total) || 0;
-  const prazo = Number(params.prazo) || 0;
+  const prazo = params.prazo as string;
   const email = params.email as string;
 
   return (
     <View style={styles.container}>
       <ScrollView style={styles.content}>
         <View style={styles.successSection}>
-          <CheckCircle2 size={64} color="#4CAF50" />
+          <CircleCheck size={64} color="#4CAF50" />
           <Text style={styles.successTitle}>Pedido Enviado!</Text>
           <Text style={styles.successMessage}>
             Seu pedido foi enviado para análise. Em breve você receberá um e-mail em{' '}
@@ -56,7 +56,7 @@ export default function OrderConfirmation() {
 
           <View style={styles.paymentTermRow}>
             <Text style={styles.paymentTermLabel}>Prazo de pagamento</Text>
-            <Text style={styles.paymentTermValue}>{prazo} dias</Text>
+            <Text style={styles.paymentTermValue}>{prazo}</Text>
           </View>
         </View>
 

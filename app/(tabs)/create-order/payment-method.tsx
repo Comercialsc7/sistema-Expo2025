@@ -33,7 +33,12 @@ export default function PaymentMethodScreen() {
       return;
     }
     setOrderPaymentTerm(selectedTerm);
-    router.push('/create-order');
+    router.push({
+      pathname: '/create-order/confirmation',
+      params: {
+        prazo: selectedTerm.description,
+      }
+    });
   };
 
   return (
