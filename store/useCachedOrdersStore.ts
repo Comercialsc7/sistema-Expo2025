@@ -13,6 +13,8 @@ export interface CachedOrder {
   subtotal: number;
   total: number;
   discount: number;
+  sellerCode?: string;
+  userId?: string;
   spinPrize?: {
     type: 'product' | 'no_prize';
     description: string;
@@ -26,6 +28,7 @@ interface CachedOrdersState {
   addCachedOrder: (order: CachedOrder) => void;
   clearCachedOrders: () => void;
   getOrderById: (id: string) => CachedOrder | undefined;
+  removeCachedOrder: (orderId: string) => void;
   setHasHydrated: (state: boolean) => void;
 }
 
@@ -62,6 +65,9 @@ export const useCachedOrdersStore = create<CachedOrdersState>()(
       })),
       clearCachedOrders: () => set({ cachedOrders: [] }),
       getOrderById: (id) => get().cachedOrders.find(order => order.id === id),
+      removeCachedOrder: (orderId) => set((state) => ({
+        cachedOrders: state.cachedOrders.filter(order => order.id !== orderId),
+      })),
       setHasHydrated: (state) => {
         set({
           _hasHydrated: state

@@ -5,6 +5,7 @@ import { useSpinResultsStore } from '../../../store/useSpinResultsStore';
 import { useNavigation } from '../../../hooks/useNavigation';
 import { useOrderStore, OrderItem } from '../../../store/useOrderStore';
 import { useCachedOrdersStore } from '../../../store/useCachedOrdersStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface SpinResult {
   prize: string;
@@ -31,12 +32,29 @@ export default function OrderSummaryScreen() {
   const girosRestantes = girosGanhos - results.length;
   const faltaGiro = 3000 - (total % 3000) || 0;
   const cuponsGanhos = Math.floor(total / 5000);
+  const faltaParaMoto = (total % 5000 === 0 && total !== 0) ? 5000 : (5000 - (total % 5000));
 
-  const handleFinalizeOrder = () => {
+  const handleFinalizeOrder = async () => {
     if (!client || !paymentTerm || orderItems.length === 0) {
       console.log("Pedido incompleto. Não pode finalizar.");
       return;
     }
+
+    let sellerCode: string | undefined;
+    try {
+      const codigosStr = await AsyncStorage.getItem('codigosRepresentante');
+      if (codigosStr) {
+        const codigosArray = JSON.parse(codigosStr);
+        if (codigosArray.length > 0) {
+          sellerCode = codigosArray[codigosArray.length - 1];
+          console.log('Código do vendedor obtido do AsyncStorage para caching:', sellerCode);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar código do representante para o pedido cacheado:', error);
+    }
+
+    console.log('Order to cache - sellerCode:', sellerCode);
 
     const orderToCache = {
       id: Date.now().toString(),
@@ -47,6 +65,7 @@ export default function OrderSummaryScreen() {
       subtotal: subtotal,
       total: total,
       discount: desconto,
+      sellerCode: sellerCode || '',
       spinPrize: results.length > 0 ? {
         type: 'product' as const,
         description: results[0].prize,
@@ -140,6 +159,13 @@ export default function OrderSummaryScreen() {
               <Text style={styles.giroLabelText}>Faltam <Text style={styles.giroLabelValue}>R$ {faltaGiro.toFixed(2)}</Text> para o próximo giro da sorte</Text>
             </View>
           )}
+
+          {faltaParaMoto > 0 && (
+             <View style={styles.motoLabelBox}>
+              <Text style={styles.motoLabelText}>Faltam <Text style={styles.motoLabelValue}>R$ {faltaParaMoto.toFixed(2)}</Text> para você concorrer a uma moto 0km</Text>
+            </View>
+          )}
+
           <TouchableOpacity style={styles.addButton} onPress={goBack}>
             <Text style={styles.addButtonText}>Adicionar mais itens</Text>
           </TouchableOpacity>
@@ -179,7 +205,6 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    justifyContent: 'space-between',
   },
   topSection: {
     backgroundColor: '#1560A8',
@@ -187,8 +212,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 30,
-    paddingBottom: 24,
+    paddingBottom: 8,
     alignItems: 'stretch',
+    marginBottom: 12,
   },
   headerTitle: {
     color: '#fff',
@@ -256,12 +282,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 0,
-    marginTop: 32,
+    marginTop: 0,
     position: 'relative',
-    paddingVertical: 40,
-    minHeight: 100,
+    paddingVertical: 38,
+    minHeight: 60,
     borderWidth: 2,
-    borderColor: '#941b80',
+    borderColor: '#FFD700',
   },
   bonusText: {
     color: '#fff',
@@ -271,12 +297,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   diamondIcon: {
-    width: 36,
-    height: 36,
+    width: 38,
+    height: 38,
     resizeMode: 'contain',
     position: 'absolute',
     top: '50%',
-    marginTop: -18,
+    marginTop: -16,
   },
   diamondLeft: {
     left: -18,
@@ -290,13 +316,13 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 24,
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 0,
     paddingBottom: 16,
   },
   addButton: {
     backgroundColor: '#1560A8',
     borderRadius: 12,
-    marginTop: 18,
+    marginTop: 290,
     paddingVertical: 12,
     alignItems: 'center',
     width: '100%',
@@ -309,7 +335,7 @@ const styles = StyleSheet.create({
   spinButton: {
     backgroundColor: '#941b80',
     borderRadius: 12,
-    marginTop: 12,
+    marginTop: 15,
     paddingVertical: 12,
     alignItems: 'center',
     width: '100%',
@@ -334,7 +360,7 @@ const styles = StyleSheet.create({
   },
   giroLabelBox: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 4,
     marginBottom: 0,
   },
   giroLabelText: {
@@ -346,8 +372,29 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
     fontWeight: 'bold',
   },
+  motoLabelBox: {
+    backgroundColor: '#FF3B30',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 49,
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 0,
+    alignSelf: 'center',
+  },
+  motoLabelText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  motoLabelValue: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
   wonPrizesBox: {
-    marginTop: 24,
+    marginTop: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#003B71',
@@ -384,7 +431,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 0,
-    marginTop: 12,
+    marginTop: 8,
     position: 'relative',
     paddingVertical: 20,
     minHeight: 60,

@@ -67,22 +67,66 @@ export default function Login() {
     }
 
     try {
-      // Lógica para salvar o código do representante no AsyncStorage
+      // 1. Obter o ID real da equipe na tabela 'teams' usando o código da equipe selecionado
+      const { data: teamData, error: teamError } = await supabase
+        .from('teams')
+        .select('id')
+        .eq('code', selectedTeam)
+        .single(); // Assumindo que os códigos de equipe são únicos
+
+      if (teamError) {
+        console.error('Erro ao buscar ID da equipe:', teamError);
+        Alert.alert('Erro', 'Ocorreu um erro ao buscar informações da equipe. Tente novamente.');
+        return;
+      }
+
+      if (!teamData) {
+        Alert.alert('Erro', 'Equipe selecionada inválida.');
+        return;
+      }
+
+      const actualTeamId = teamData.id;
+
+      // 2. Verificar o código do representante e o ID da equipe real na tabela 'users'
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, user_id, team_id, name')
+        .eq('user_id', code)
+        .eq('team_id', selectedTeam);
+
+      if (userError) {
+        console.error('Erro ao buscar usuário:', userError);
+        Alert.alert('Erro', 'Ocorreu um erro ao verificar suas credenciais. Tente novamente.');
+        return;
+      }
+
+      if (!userData || userData.length === 0) {
+        Alert.alert('Erro', 'Código de representante ou equipe inválidos.');
+        return;
+      }
+
+      const foundUser = userData[0];
+      const representativeCodeToStore = foundUser.user_id;
+      const representativeNameToStore = foundUser.name;
+
+      // 3. Lógica para salvar o código e o nome do representante no AsyncStorage
       const codigosSalvosStr = await AsyncStorage.getItem('codigosRepresentante');
       let codigosArray = codigosSalvosStr ? JSON.parse(codigosSalvosStr) : [];
 
-      if (!codigosArray.includes(code)) {
-        codigosArray.push(code);
+      if (!codigosArray.includes(representativeCodeToStore)) {
+        codigosArray.push(representativeCodeToStore);
         await AsyncStorage.setItem('codigosRepresentante', JSON.stringify(codigosArray));
-        console.log('Código do representante salvo:', code);
-      } else {
-        console.log('Código do representante já existe:', code);
       }
+      // Salvar o nome do representante separadamente ou em um objeto mais complexo
+      await AsyncStorage.setItem('representanteNome', representativeNameToStore);
+
+      console.log('Código do representante salvo no AsyncStorage:', representativeCodeToStore);
+      console.log('Nome do representante salvo no AsyncStorage:', representativeNameToStore);
 
       router.push('/(app)/orders');
     } catch (error) {
       console.error('Erro ao tentar login ou salvar código:', error);
-      Alert.alert('Erro', 'Ocorreu um erro ao tentar fazer login. Tente novamente.');
+      Alert.alert('Erro', 'Ocorreu um erro inesperado ao fazer login. Tente novamente.');
     }
   };
 

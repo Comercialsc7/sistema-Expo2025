@@ -41,7 +41,7 @@ export default function OrdersScreen() {
   const { products, loading: productsLoading, error: productsError } = useProducts();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
-  const [representanteCodigo, setRepresentanteCodigo] = useState<string | null>(null);
+  const [representanteNome, setRepresentanteNome] = useState<string | null>(null);
 
   const menuItems: MenuItem[] = [
     { 
@@ -87,21 +87,18 @@ export default function OrdersScreen() {
   }, [banners]);
 
   useEffect(() => {
-    const fetchRepresentanteCodigo = async () => {
+    const fetchRepresentanteData = async () => {
       try {
-        const codigosStr = await AsyncStorage.getItem('codigosRepresentante');
-        if (codigosStr) {
-          const codigosArray = JSON.parse(codigosStr);
-          if (codigosArray.length > 0) {
-            // Pegar o último código do array
-            setRepresentanteCodigo(codigosArray[codigosArray.length - 1]);
-          }
+        const nomeStr = await AsyncStorage.getItem('representanteNome');
+        if (nomeStr) {
+          setRepresentanteNome(nomeStr);
+          console.log('Representante Nome recuperado:', nomeStr);
         }
       } catch (error) {
-        console.error('Erro ao buscar código do representante:', error);
+        console.error('Erro ao buscar nome do representante:', error);
       }
     };
-    fetchRepresentanteCodigo();
+    fetchRepresentanteData();
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -162,7 +159,7 @@ export default function OrdersScreen() {
         </View>
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeText}>Bem-vindo</Text>
-          <Text style={styles.userName}>Vendedor{representanteCodigo ? ` ${representanteCodigo}` : ''}</Text>
+          <Text style={styles.userName}>Vendedor {representanteNome || ''}</Text>
         </View>
       </View>
 

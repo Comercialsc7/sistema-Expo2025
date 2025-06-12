@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "cross-env EXPO_NO_TELEMETRY=1 expo start",
     "build:web": "expo export --platform web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo-google-fonts/montserrat": "^0.2.2",
@@ -16,6 +18,7 @@
     "@react-navigation/native": "^7.0.14",
     "@supabase/postgrest-js": "1.9.0",
     "@supabase/supabase-js": "^2.49.10",
+    "base64-arraybuffer": "^1.0.2",
     "expo": "53.0.9",
     "expo-blur": "~14.1.4",
     "expo-camera": "~16.1.6",
