@@ -41,7 +41,9 @@
       "router": {},
       "eas": {
         "projectId": "afbf445b-5ee7-4383-ac7d-50325824f1e5"
-      }
+      },
+      "EXPO_PUBLIC_SUPABASE_URL": "https://your-project-id.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key-here"
     }
   }
 }
