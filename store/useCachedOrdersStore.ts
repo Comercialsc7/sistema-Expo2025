@@ -65,9 +65,12 @@ export const useCachedOrdersStore = create<CachedOrdersState>()(
       })),
       clearCachedOrders: () => set({ cachedOrders: [] }),
       getOrderById: (id) => get().cachedOrders.find(order => order.id === id),
-      removeCachedOrder: (orderId) => set((state) => ({
-        cachedOrders: state.cachedOrders.filter(order => order.id !== orderId),
-      })),
+      removeCachedOrder: (orderId) => set((state) => {
+        console.log('Cached orders antes da remoção (' + orderId + '):', state.cachedOrders.length);
+        const updatedOrders = state.cachedOrders.filter(order => order.id !== orderId);
+        console.log('Cached orders depois da remoção (' + orderId + '):', updatedOrders.length);
+        return { cachedOrders: updatedOrders };
+      }),
       setHasHydrated: (state) => {
         set({
           _hasHydrated: state

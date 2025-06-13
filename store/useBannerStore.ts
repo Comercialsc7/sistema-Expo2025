@@ -25,7 +25,7 @@ export const useBannerStore = create<BannerStore>((set) => ({
       title: "Promoção Especial",
       subtitle: "Até 30% de desconto em bebidas",
       backgroundColor: "#FF6B6B",
-      image: require('../assets/images/girosorte.gif'),
+      image: 'https://mnprxkgjrifuaxlsywob.supabase.co/storage/v1/object/public/bunners//girosorte.gif',
       order: 0
     },
     {
@@ -33,7 +33,7 @@ export const useBannerStore = create<BannerStore>((set) => ({
       title: "Novos Produtos",
       subtitle: "Confira os lançamentos",
       backgroundColor: "#4ECDC4",
-      image: require('../assets/images/comprapremiada.gif'),
+      image: 'https://mnprxkgjrifuaxlsywob.supabase.co/storage/v1/object/public/bunners//comprapremiada.gif',
       order: 1
     },
   ],

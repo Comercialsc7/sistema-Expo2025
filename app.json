@@ -34,7 +34,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptative-icon.png",
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "permissions": []
     },
     "extra": {
       "router": {},

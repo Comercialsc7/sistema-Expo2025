@@ -29,7 +29,6 @@ config.resolver.assetExts = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
 // Add resolution for nanoid and other problematic modules
 config.resolver.extraNodeModules = {
   'nanoid/non-secure': require.resolve('nanoid/non-secure'),
-  '@supabase/postgrest-js': require.resolve('@supabase/postgrest-js'),
 };
 
 // Desabilitar a resolução de package exports que causa conflitos
