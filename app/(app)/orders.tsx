@@ -31,6 +31,291 @@ interface Order {
   created_at: string;
 }
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  scrollContentContainer: {
+    paddingBottom: 100, // Ajuste este valor conforme a altura do botão e o espaçamento desejado
+  },
+  menuButton: {
+    position: 'absolute',
+    top: Platform.OS === 'web' ? 16 : 48,
+    left: 16,
+    zIndex: 1,
+    width: 40,
+    height: 40,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#003B71',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: '0 4px 14px rgba(0, 59, 113, 0.2)',
+      }
+    }),
+  },
+  header: {
+    paddingTop: Platform.OS === 'web' ? 16 : 48,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  shareButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  welcomeContainer: {
+    marginBottom: 8,
+  },
+  welcomeText: {
+    fontSize: 16,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+  },
+  userName: {
+    fontSize: 24,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
+  },
+  bannerContainer: {
+    width: '100%',
+    borderRadius: 40,
+    overflow: 'hidden',
+    aspectRatio: 3.3,
+    alignSelf: 'center',
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  bannerIndicators: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  indicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  brandsSection: {
+    marginBottom: 24,
+  },
+  brandsScroll: {
+    marginTop: 12,
+    paddingHorizontal: 16,
+  },
+  brandCard: {
+    marginRight: 16,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+      }
+    }),
+  },
+  brandImage: {
+    width: 60,
+    height: 40,
+    resizeMode: 'contain',
+    marginBottom: 8,
+  },
+  brandName: {
+    fontSize: 12,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Medium',
+    textAlign: 'center',
+  },
+  productsSection: {
+    marginBottom: 24,
+  },
+  productsScroll: {
+    marginTop: 12,
+    paddingHorizontal: 16,
+  },
+  productsGrid: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    justifyContent: 'space-between',
+  },
+  productItem: {
+    marginRight: 16,
+    width: 150,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+      }
+    }),
+  },
+  productItemGrid: {
+    flex: 1 / 3, // Each item takes 1/3 of the row
+    margin: 4, // Add some margin between items
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+      }
+    }),
+  },
+  productImage: {
+    width: '100%',
+    height: 100,
+    resizeMode: 'contain',
+    marginBottom: 8,
+  },
+  productInfo: {
+    width: '100%',
+  },
+  productName: {
+    fontSize: 14,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
+    marginBottom: 4,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  productPrice: {
+    fontSize: 16,
+    color: '#0088CC',
+    fontFamily: 'Montserrat-Bold',
+  },
+  productQuantity: {
+    fontSize: 12,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+  },
+  orderButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    backgroundColor: 'transparent',
+    zIndex: 10,
+  },
+  orderButton: {
+    width: '100%',
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  orderButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontFamily: 'Montserrat-Bold',
+  },
+  menuButtonText: {
+    fontSize: 24,
+    color: '#003B71',
+    paddingHorizontal: 16,
+  },
+  shareButtonText: {
+    fontSize: 14,
+    color: '#003B71',
+    marginRight: 16,
+  },
+  orderCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  orderInfo: {
+    flex: 1,
+  },
+  orderClient: {
+    fontSize: 16,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Bold',
+    marginBottom: 4,
+  },
+  orderTotal: {
+    fontSize: 16,
+    color: '#003B71',
+    fontFamily: 'Montserrat-Medium',
+  },
+  orderStatus: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'Montserrat-Regular',
+    marginTop: 4,
+  },
+  orderDate: {
+    fontSize: 12,
+    color: '#999999',
+    fontFamily: 'Montserrat-Regular',
+    marginTop: 4,
+  },
+});
+
 export default function OrdersScreen() {
   const { banners } = useBannerStore();
   const [currentBanner, setCurrentBanner] = useState(0);
@@ -163,7 +448,10 @@ export default function OrdersScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContentContainer}
+      >
         {banners && banners.length > 0 && banners[currentBanner] && (
           <Animated.View style={[styles.bannerContainer, { width: screenWidth }, animatedStyle]}>
             <Image
@@ -216,15 +504,13 @@ export default function OrdersScreen() {
             title="Itens Aceleradores" 
             onViewAll={() => navigateTo('/(tabs)/products' as any)}
           />
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
-            style={styles.productsScroll}
-          >
-            {acceleratorProducts.slice(0, 6).map((product) => (
+          <FlatList
+            data={acceleratorProducts}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item: product }) => (
               <TouchableOpacity 
                 key={product.id} 
-                style={styles.productItem}
+                style={styles.productItemGrid}
                 onPress={() => navigateTo('/(tabs)/products' as any)}
               >
                 <Image 
@@ -243,271 +529,25 @@ export default function OrdersScreen() {
                   </Text>
                 </View>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        <View style={styles.orderButtonContainer}>
-          <MovingBorderButton
-            onPress={handleOrder}
-            style={styles.orderButton}
-          >
-            <Text style={styles.orderButtonText}>Fazer Pedido</Text>
-          </MovingBorderButton>
+            )}
+            numColumns={3}
+            contentContainerStyle={styles.productsGrid}
+          />
         </View>
 
         <View style={{ height: 20 }} />
       </ScrollView>
+
+      {/* Botão Fazer Pedido flutuante */} 
+      <View style={styles.orderButtonContainer}>
+        <MovingBorderButton
+          onPress={handleOrder}
+          style={styles.orderButton}
+        >
+          <Text style={styles.orderButtonText}>Fazer Pedido</Text>
+        </MovingBorderButton>
+      </View>
+
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  menuButton: {
-    position: 'absolute',
-    top: Platform.OS === 'web' ? 16 : 48,
-    left: 16,
-    zIndex: 1,
-    width: 40,
-    height: 40,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#003B71',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0 4px 14px rgba(0, 59, 113, 0.2)',
-      }
-    }),
-  },
-  header: {
-    paddingTop: Platform.OS === 'web' ? 16 : 48,
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  shareButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  welcomeContainer: {
-    marginBottom: 8,
-  },
-  welcomeText: {
-    fontSize: 16,
-    color: '#666666',
-    fontFamily: 'Montserrat-Regular',
-  },
-  userName: {
-    fontSize: 24,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Bold',
-  },
-  bannerContainer: {
-    width: '100%',
-    borderRadius: 40,
-    overflow: 'hidden',
-    aspectRatio: 3.3,
-    alignSelf: 'center',
-  },
-  bannerImage: {
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
-  },
-  bannerIndicators: {
-    position: 'absolute',
-    bottom: 16,
-    right: 16,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  indicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  brandsSection: {
-    marginBottom: 24,
-  },
-  brandsScroll: {
-    marginTop: 12,
-    paddingHorizontal: 16,
-  },
-  brandCard: {
-    marginRight: 16,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 12,
-    width: 100,
-    height: 100,
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-      }
-    }),
-  },
-  brandImage: {
-    width: 60,
-    height: 40,
-    resizeMode: 'contain',
-    marginBottom: 8,
-  },
-  brandName: {
-    fontSize: 12,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Medium',
-    textAlign: 'center',
-  },
-  productsSection: {
-    marginBottom: 24,
-  },
-  productsScroll: {
-    marginTop: 12,
-    paddingHorizontal: 16,
-  },
-  productItem: {
-    marginRight: 16,
-    width: 150,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-      }
-    }),
-  },
-  productImage: {
-    width: '100%',
-    height: 100,
-    resizeMode: 'contain',
-    marginBottom: 8,
-  },
-  productInfo: {
-    width: '100%',
-  },
-  productName: {
-    fontSize: 14,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Bold',
-    marginBottom: 4,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  productPrice: {
-    fontSize: 16,
-    color: '#0088CC',
-    fontFamily: 'Montserrat-Bold',
-  },
-  productQuantity: {
-    fontSize: 12,
-    color: '#666666',
-    fontFamily: 'Montserrat-Regular',
-  },
-  orderButtonContainer: {
-    padding: 16,
-    marginBottom: 24,
-  },
-  orderButton: {
-    height: 56,
-    backgroundColor: '#0088CC',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  orderButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontFamily: 'Montserrat-Bold',
-  },
-  menuButtonText: {
-    fontSize: 24,
-    color: '#003B71',
-    paddingHorizontal: 16,
-  },
-  shareButtonText: {
-    fontSize: 14,
-    color: '#003B71',
-    marginRight: 16,
-  },
-  orderCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  orderInfo: {
-    flex: 1,
-  },
-  orderClient: {
-    fontSize: 16,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Bold',
-    marginBottom: 4,
-  },
-  orderTotal: {
-    fontSize: 16,
-    color: '#003B71',
-    fontFamily: 'Montserrat-Medium',
-  },
-  orderStatus: {
-    fontSize: 14,
-    color: '#666666',
-    fontFamily: 'Montserrat-Regular',
-    marginTop: 4,
-  },
-  orderDate: {
-    fontSize: 12,
-    color: '#999999',
-    fontFamily: 'Montserrat-Regular',
-    marginTop: 4,
-  },
-}); 
+} 

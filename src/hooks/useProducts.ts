@@ -20,16 +20,24 @@ export const useProducts = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      console.log('Buscando produtos do Supabase...');
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .not('image_url', 'is', null)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar produtos no Supabase:', error);
+        throw error;
+      }
+      console.log('Produtos recebidos do Supabase:', data ? data.length : 0);
+      data?.forEach(product => {
+        console.log(`DEBUG useProducts: Produto ${product.name}, is_accelerator: ${product.is_accelerator} (tipo: ${typeof product.is_accelerator})`);
+      });
       setProducts(data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar produtos');
+      console.error('Erro no catch de fetchProducts:', err);
     } finally {
       setLoading(false);
     }
