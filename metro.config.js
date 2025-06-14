@@ -24,7 +24,7 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
 
 // Add support for resolving modules including .mjs files
 config.resolver.sourceExts = ['mjs', 'jsx', 'js', 'ts', 'tsx', 'json'];
-config.resolver.assetExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
+config.resolver.assetExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ttf', 'otf'];
 
 // Add resolution for nanoid and other problematic modules
 config.resolver.extraNodeModules = {
