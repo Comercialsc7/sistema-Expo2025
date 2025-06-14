@@ -42,8 +42,8 @@
       "eas": {
         "projectId": "afbf445b-5ee7-4383-ac7d-50325824f1e5"
       },
-      "EXPO_PUBLIC_SUPABASE_URL": "https://your-project-id.supabase.co",
-      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key-here"
+      "EXPO_PUBLIC_SUPABASE_URL": "https://afbf445b-5ee7-4383-ac7d-50325824f1e5.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmYmY0NDViLTVlZTctNDM4My1hYzdkLTUwMzI1ODI0ZjFlNSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzM2MDEzNzgyLCJleHAiOjIwNTE1ODk3ODJ9.example-key-replace-with-actual"
     }
   }
 }
