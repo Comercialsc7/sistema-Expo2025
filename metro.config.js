@@ -24,7 +24,7 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
 
 // Add support for resolving modules including .mjs files
 config.resolver.sourceExts = ['mjs', 'jsx', 'js', 'ts', 'tsx', 'json'];
-config.resolver.assetExts = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+config.resolver.assetExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
 
 // Add resolution for nanoid and other problematic modules
 config.resolver.extraNodeModules = {
@@ -33,5 +33,14 @@ config.resolver.extraNodeModules = {
 
 // Desabilitar a resolução de package exports que causa conflitos
 config.resolver.unstable_enablePackageExports = false;
+
+// Configurações específicas para web
+if (process.env.EXPO_PLATFORM === 'web') {
+  config.resolver.alias = {
+    ...config.resolver.alias,
+    'react-native$': 'react-native-web',
+    'react-native/Libraries/EventEmitter/NativeEventEmitter$': 'react-native-web/dist/vendor/react-native/NativeEventEmitter',
+  };
+}
 
 module.exports = withNativeWind(config, { input: "./global.css" });
