@@ -18,15 +18,11 @@ export default function AppLayout() {
     },
     {
       title: 'Clientes',
-      route: '/(app)/clients',
+      route: '/create-order/select-client',
     },
     {
       title: 'Produtos',
-      route: '/(app)/products',
-    },
-    {
-      title: 'Configurações',
-      route: '/(app)/settings',
+      route: '/products',
     },
     {
       title: 'Sair',

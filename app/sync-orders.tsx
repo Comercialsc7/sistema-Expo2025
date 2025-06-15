@@ -21,6 +21,7 @@ export default function SyncOrdersScreen() {
   const [selectedOrder, _setSelectedOrder] = useState<CachedOrder | null>(null);
   const [isDeleteConfirmModalVisible, setIsDeleteConfirmModalVisible] = useState(false);
   const [orderIdToDelete, setOrderIdToDelete] = useState<string | null>(null);
+  const [sentOrders, setSentOrders] = useState<string[]>([]);
 
   const setSelectedOrder = useCallback((order: CachedOrder | null) => {
     console.log('setSelectedOrder chamado com:', order?.id);
@@ -38,27 +39,39 @@ export default function SyncOrdersScreen() {
         return;
       }
 
+      const sentIds: string[] = [];
       for (const order of cachedOrders) {
+        if (sentOrders.includes(order.id)) {
+          // Ignora pedidos já enviados
+          continue;
+        }
+
         let prizePhotoUrl: string | null = null;
 
         // 1. Upload da imagem do prêmio, se existir
         if (order.spinPrize?.photo) {
-          const base64Data = order.spinPrize.photo.split('data:image/png;base64,').pop();
-          if (base64Data) {
-            const arrayBuffer = decode(base64Data);
-            const fileName = `spin_prize_${order.id}_${Date.now()}.png`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('spinprizeimages')
-              .upload(fileName, arrayBuffer, { contentType: 'image/png' });
-
-            if (uploadError) {
-              console.error('Erro ao fazer upload da imagem do prêmio:', uploadError);
-              Alert.alert('Erro', `Falha ao fazer upload da imagem do prêmio para o pedido ${order.id}.`);
-              throw uploadError;
-            }
-            // Ajuste a URL conforme seu projeto Supabase
-            prizePhotoUrl = `https://your_supabase_project_id.supabase.co/storage/v1/object/public/spinprizeimages/${fileName}`;
+          // Se for uma URI local (file://), converte para Blob
+          let blob = null;
+          try {
+            const response = await fetch(order.spinPrize.photo);
+            blob = await response.blob();
+          } catch (e) {
+            console.error('Erro ao converter foto em Blob:', e);
+            Alert.alert('Erro', `Falha ao processar a imagem do prêmio para o pedido ${order.id}.`);
+            throw e;
           }
+          const fileName = `spin_prize_${order.id}_${Date.now()}.png`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('spinprizeimages')
+            .upload(fileName, blob, { contentType: 'image/png' });
+
+          if (uploadError) {
+            console.error('Erro ao fazer upload da imagem do prêmio:', uploadError);
+            Alert.alert('Erro', `Falha ao fazer upload da imagem do prêmio para o pedido ${order.id}.`);
+            throw uploadError;
+          }
+          // Ajuste a URL conforme seu projeto Supabase
+          prizePhotoUrl = `https://your_supabase_project_id.supabase.co/storage/v1/object/public/spinprizeimages/${fileName}`;
         }
 
         // 2. Montar array de produtos
@@ -95,9 +108,9 @@ export default function SyncOrdersScreen() {
           Alert.alert('Erro', `Falha ao salvar o pedido ${order.id} na tabela de pedidos.`);
           throw insertError;
         }
+        sentIds.push(order.id);
       }
-      
-      clearCachedOrders();
+      setSentOrders((prev) => [...prev, ...sentIds]);
       setSyncStatus('success');
       Alert.alert('Sucesso', 'Dados enviados com sucesso!');
     } catch (error) {
@@ -107,7 +120,7 @@ export default function SyncOrdersScreen() {
     } finally {
       setIsSending(false);
     }
-  }, [cachedOrders, clearCachedOrders]);
+  }, [cachedOrders, clearCachedOrders, sentOrders]);
 
   const handleDeleteOrder = useCallback((orderId: string) => {
     console.log('handleDeleteOrder chamado para o pedido:', orderId);
@@ -234,6 +247,7 @@ export default function SyncOrdersScreen() {
                 renderItem={({ item }) => (
                   <OrderItem
                     item={item}
+                    enviado={sentOrders.includes(item.id)}
                     onPress={setSelectedOrder}
                   />
                 )}

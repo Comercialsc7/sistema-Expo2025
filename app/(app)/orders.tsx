@@ -335,15 +335,11 @@ export default function OrdersScreen() {
     },
     { 
       title: 'Clientes',
-      route: '/(app)/clients',
+      route: '/create-order/select-client',
     },
     { 
       title: 'Produtos',
-      route: '/(app)/products',
-    },
-    { 
-      title: 'Configurações',
-      route: '/(app)/settings',
+      route: '/products',
     },
     { 
       title: 'Sair',
@@ -502,7 +498,7 @@ export default function OrdersScreen() {
         <View style={styles.productsSection}>
           <SectionHeader 
             title="Itens Aceleradores" 
-            onViewAll={() => navigateTo('/(tabs)/products' as any)}
+            onViewAll={() => navigateTo('/products' as any)}
           />
           <FlatList
             data={acceleratorProducts}
@@ -511,7 +507,7 @@ export default function OrdersScreen() {
               <TouchableOpacity 
                 key={product.id} 
                 style={styles.productItemGrid}
-                onPress={() => navigateTo('/(tabs)/products' as any)}
+                onPress={() => navigateTo('/products' as any)}
               >
                 <Image 
                   source={{ uri: product.image_url }} 

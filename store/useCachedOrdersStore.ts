@@ -21,6 +21,7 @@ export interface CachedOrder {
     photo?: string;
   };
   email?: string;
+  enviado?: boolean;
 }
 
 interface CachedOrdersState {
