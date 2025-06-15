@@ -15,8 +15,7 @@ export default function RootLayout() {
   useFrameworkReady();
 
   const [fontsLoaded, fontError] = useFonts({
-    // Usando fontes do sistema que são mais confiáveis
-    'System': require('../assets/fonts/System.ttf'), // Placeholder - será substituído por fontes do sistema
+    // Using system fonts - no custom fonts loaded for now
   });
 
   useEffect(() => {
@@ -24,11 +23,6 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
-
-  // Não bloquear a renderização por causa das fontes
-  // if (!fontsLoaded && !fontError) {
-  //   return null;
-  // }
 
   return (
     <View style={styles.container}>
