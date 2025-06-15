@@ -4,7 +4,7 @@ const { withNativeWind } = require("nativewind/metro");
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
-// Expo SDK 53 specific resolver configuration for Node.js modules
+// Expo SDK 52 specific resolver configuration for Node.js modules
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   // Lista reduzida de módulos Node.js desabilitados
   if (
