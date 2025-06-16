@@ -414,7 +414,9 @@ export default function OrdersScreen() {
     }
   };
 
-  const acceleratorProducts = products.filter(product => product.is_accelerator);
+  const acceleratorProducts = products.filter(
+    product => String(product.is_accelerator) === 'true' || String(product.is_accelerator) === '1'
+  );
 
   return (
     <View style={styles.container}>

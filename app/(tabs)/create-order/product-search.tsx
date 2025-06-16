@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { 
@@ -9,7 +9,6 @@ import Animated, {
 import { usePaymentTermsStore } from '../../../store/usePaymentTermsStore';
 import { useOrderStore } from '../../../store/useOrderStore';
 import { useProducts, Product } from '../../../hooks/useProducts';
-import { supabase } from '../../../lib/supabase';
 
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
@@ -32,47 +31,11 @@ export default function ProductSearch() {
   const selectedPaymentTerm = paymentTerms.find(term => term.id === paymentTermId);
   const { addItem } = useOrderStore();
   const { products, loading, error } = useProducts();
-  const [productsList, setProductsList] = useState<Product[]>([]);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      setProductsList(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar produtos:', error);
-    }
-  };
-
-  const filteredProducts = productsList.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.code.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProducts = products.filter(product =>
+    (product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (product.code && product.code.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-
-  const handleSelectProduct = (product: Product) => {
-    addItem({
-      id: product.id,
-      code: product.code,
-      name: product.name,
-      box: product.box_size ? `CX ${product.box_size} unids.` : '',
-      price: product.price,
-      discount: 0, // TODO: Adicionar campo de desconto na tabela de produtos
-      image: product.image_url,
-      quantity: 1,
-      isAccelerator: product.is_accelerator,
-      paymentTerm: selectedPaymentTerm
-    });
-    
-    router.push('/(tabs)/create-order');
-  };
 
   if (loading) {
     return (
@@ -89,6 +52,22 @@ export default function ProductSearch() {
       </View>
     );
   }
+
+  const handleSelectProduct = (product: Product) => {
+    addItem({
+      id: product.id,
+      code: product.code,
+      name: product.name,
+      box: product.box_size ? `CX ${product.box_size} unids.` : '',
+      price: product.price,
+      discount: 0, // TODO: Adicionar campo de desconto na tabela de produtos
+      image: product.image_url,
+      quantity: 1,
+      isAccelerator: product.is_accelerator,
+      paymentTerm: selectedPaymentTerm
+    });
+    router.push('/(tabs)/create-order');
+  };
 
   return (
     <View style={styles.container}>
@@ -111,12 +90,12 @@ export default function ProductSearch() {
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Image source={require('../../../assets/images/buscar.png')} style={styles.searchInnerIconImage} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar produtos..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar produtos..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
         </View>
       </View>
 

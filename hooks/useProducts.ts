@@ -20,16 +20,51 @@ export const useProducts = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .not('image_url', 'is', null)
-        .order('created_at', { ascending: false });
+      // Buscar TODOS os produtos em lotes para evitar timeouts
+      let allProducts: Product[] = [];
+      const batchSize = 1000;
+      let offset = 0;
+      let hasMore = true;
 
-      if (error) throw error;
-      setProducts(data || []);
+      // Verificar quantos produtos existem no total
+      const { count, error: countError } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true });
+      if (countError) {
+        console.warn('Erro ao contar produtos:', countError);
+      }
+      console.log(`Total esperado de produtos no banco: ${count}`);
+
+      while (hasMore) {
+        console.log(`🔄 Buscando lote ${Math.floor(offset / batchSize) + 1} (produtos ${offset + 1} a ${offset + batchSize})...`);
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('name', { ascending: true })
+          .range(offset, offset + batchSize - 1);
+        if (error) {
+          console.error('Erro ao buscar produtos no Supabase:', error);
+          throw error;
+        }
+        if (data && data.length > 0) {
+          allProducts = [...allProducts, ...data];
+          console.log(`✅ Lote carregado: ${data.length} produtos (Total acumulado: ${allProducts.length})`);
+          if (data.length < batchSize) {
+            hasMore = false;
+          } else {
+            offset += batchSize;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+      if (count && allProducts.length < count) {
+        console.warn(`⚠️ ATENÇÃO: Esperávamos ${count} produtos, mas recebemos apenas ${allProducts.length}`);
+      }
+      setProducts(allProducts);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar produtos');
+      console.error('Erro no catch de fetchProducts:', err);
     } finally {
       setLoading(false);
     }

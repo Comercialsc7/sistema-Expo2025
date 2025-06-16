@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, Image } from 'react-native';
 import { router } from 'expo-router';
-import { supabase } from '../../../lib/supabase';
+import { useProducts } from '../../../hooks/useProducts';
 
 interface Product {
   id: string;
@@ -14,37 +14,17 @@ interface Product {
 }
 
 export default function ProductsScreen() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const { products, loading, error } = useProducts();
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar produtos:', error);
-      alert('Erro ao buscar produtos. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  console.log('Total de produtos carregados:', products.length);
+  console.log('Total de produtos exibidos (após filtro):', filteredProducts.length);
 
   const renderProductItem = ({ item }: { item: Product }) => (
     <TouchableOpacity 

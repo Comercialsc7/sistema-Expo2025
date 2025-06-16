@@ -85,6 +85,24 @@ export default function SyncOrdersScreen() {
           acelerador: item.isAccelerator
         }));
 
+        // NOVO: Verificar se o pedido já existe no banco
+        const { data: existing, error: checkError } = await supabase
+          .from('pedidos')
+          .select('pedido_id')
+          .eq('pedido_id', order.id)
+          .single();
+        if (checkError && checkError.code !== 'PGRST116') {
+          // PGRST116 = Not found, pode ignorar
+          console.error('Erro ao verificar pedido existente:', checkError);
+          continue;
+        }
+        if (existing) {
+          // Já existe, não insere de novo
+          console.log(`Pedido ${order.id} já existe no banco, pulando inserção.`);
+          sentIds.push(order.id);
+          continue;
+        }
+
         // 3. Inserir o pedido na tabela 'pedidos'
         const { error: insertError } = await supabase
           .from('pedidos')
