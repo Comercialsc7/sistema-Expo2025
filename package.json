@@ -5,8 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "cross-env EXPO_NO_TELEMETRY=1 npx expo start",
-    "build:web": "npx expo export --platform web",
-    "build": "npx expo export --platform web",
+    "build:web": "npx expo export --platform web && node scripts/post-build.js",
+    "build": "npx expo export --platform web && node scripts/post-build.js",
     "start": "npx expo start",
     "lint": "npx expo lint",
     "android": "npx expo run:android",

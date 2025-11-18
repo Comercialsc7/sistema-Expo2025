@@ -17,7 +17,7 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png",
       "name": "Sistema Expo2025",
       "shortName": "Expo2025",
