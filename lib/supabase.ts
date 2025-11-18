@@ -1,29 +1,45 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+let supabaseInstance: SupabaseClient | null = null;
 
-if (!supabaseUrl) {
-  throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL environment variable');
-}
+function getSupabaseClient() {
+  if (supabaseInstance) {
+    return supabaseInstance;
+  }
 
-if (!supabaseAnonKey) {
-  throw new Error('Missing EXPO_PUBLIC_SUPABASE_ANON_KEY environment variable');
-}
+  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-// Configurações específicas para diferentes plataformas
-const supabaseConfig = {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: Platform.OS === 'web',
-  },
-  global: {
-    headers: {
-      'X-Client-Info': `expo-${Platform.OS}`,
+  if (!supabaseUrl) {
+    throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL environment variable');
+  }
+
+  if (!supabaseAnonKey) {
+    throw new Error('Missing EXPO_PUBLIC_SUPABASE_ANON_KEY environment variable');
+  }
+
+  // Configurações específicas para diferentes plataformas
+  const supabaseConfig = {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: Platform.OS === 'web',
     },
-  },
-};
+    global: {
+      headers: {
+        'X-Client-Info': `expo-${Platform.OS}`,
+      },
+    },
+  };
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, supabaseConfig);
+  supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, supabaseConfig);
+  return supabaseInstance;
+}
+
+export const supabase = new Proxy({} as SupabaseClient, {
+  get: (target, prop) => {
+    const client = getSupabaseClient();
+    return (client as any)[prop];
+  },
+});
