@@ -25,6 +25,19 @@ if (fs.existsSync(swSource)) {
   console.log('✓ service-worker.js copiado para dist/');
 }
 
+// Copiar ícones para assets/images
+const assetsImagesPath = path.join(distPath, 'assets', 'images');
+if (!fs.existsSync(assetsImagesPath)) {
+  fs.mkdirSync(assetsImagesPath, { recursive: true });
+}
+
+const iconSource = path.join(__dirname, '../assets/images/icon.png');
+const iconDest = path.join(assetsImagesPath, 'icon.png');
+if (fs.existsSync(iconSource)) {
+  fs.copyFileSync(iconSource, iconDest);
+  console.log('✓ icon.png copiado para dist/assets/images/');
+}
+
 // Injetar tags PWA no index.html se existir
 const indexPath = path.join(distPath, 'index.html');
 if (fs.existsSync(indexPath)) {
