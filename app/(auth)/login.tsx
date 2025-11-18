@@ -36,6 +36,7 @@ export default function Login() {
 
   const fetchTeams = async () => {
     try {
+      console.log('Iniciando busca de equipes...');
       const { data, error } = await supabase
         .from('teams')
         .select('*')
@@ -43,12 +44,14 @@ export default function Login() {
 
       if (error) {
         console.error('Erro ao buscar equipes:', error);
+        Alert.alert('Erro', `Não foi possível carregar as equipes: ${error.message}`);
         return;
       }
       console.log('Equipes carregadas:', data);
       setTeams(data || []);
     } catch (error) {
-      console.error('Erro:', error);
+      console.error('Erro ao buscar equipes:', error);
+      Alert.alert('Erro', 'Ocorreu um erro ao carregar as equipes. Verifique sua conexão.');
     }
   };
 

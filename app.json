@@ -32,7 +32,9 @@
       "router": {},
       "eas": {
         "projectId": "afbf445b-5ee7-4383-ac7d-50325824f1e5"
-      }
+      },
+      "supabaseUrl": "https://yojggsijkfsejlnwreqr.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvamdnc2lqa2ZzZWpsbndyZXFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0ODMzOTIsImV4cCI6MjA3OTA1OTM5Mn0.nj7Y7ATgydy8r3zitErpeJqpqNj6fdv7bYU1S-8CskY"
     }
   }
 }
