@@ -18,7 +18,17 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Sistema Expo2025",
+      "shortName": "Expo2025",
+      "lang": "pt-BR",
+      "scope": "/",
+      "themeColor": "#003B71",
+      "backgroundColor": "#003B71",
+      "display": "standalone",
+      "orientation": "portrait",
+      "startUrl": "/",
+      "preferRelatedApplications": false
     },
     "plugins": [
       "expo-router",

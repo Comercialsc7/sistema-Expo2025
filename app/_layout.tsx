@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { InstallPWABanner } from '@/components/shared/InstallPWABanner';
+import { OfflineIndicator } from '@/components/shared/OfflineIndicator';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -26,6 +28,8 @@ export default function RootLayout() {
 
   return (
     <View style={styles.container}>
+      {Platform.OS === 'web' && <InstallPWABanner />}
+      {Platform.OS === 'web' && <OfflineIndicator />}
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(app)" />
