@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import RNPickerSelect from 'react-native-picker-select';
 import { supabase } from '../../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import TableStore from '../../lib/TableStore';
+import OfflineCache from '../../lib/OfflineCache';
 
 const logoDmuller = require('../../assets/images/logoDmuller.png');
 
@@ -17,6 +19,7 @@ export default function Login() {
   const [code, setCode] = useState('');
   const [selectedTeam, setSelectedTeam] = useState<number | undefined>(undefined);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [isOffline, setIsOffline] = useState(false);
 
   const codeInputRef = useRef<TextInput>(null);
 
@@ -37,21 +40,68 @@ export default function Login() {
   const fetchTeams = async () => {
     try {
       console.log('Iniciando busca de equipes...');
-      const { data, error } = await supabase
-        .from('teams')
-        .select('*')
-        .order('code');
 
-      if (error) {
-        console.error('Erro ao buscar equipes:', error);
-        Alert.alert('Erro', `Não foi possível carregar as equipes: ${error.message}`);
-        return;
+      // Verifica se está online
+      const online = Platform.OS === 'web' ? navigator.onLine : true;
+      setIsOffline(!online);
+
+      if (online) {
+        // Online: busca do Supabase
+        const { data, error } = await supabase
+          .from('teams')
+          .select('*')
+          .order('code');
+
+        if (error) {
+          console.error('Erro ao buscar equipes:', error);
+          // Tenta buscar do cache
+          const cachedTeams = await TableStore.get('teams');
+          if (cachedTeams && cachedTeams.length > 0) {
+            console.log('📦 Usando equipes do cache');
+            setTeams(cachedTeams);
+            setIsOffline(true);
+          } else {
+            Alert.alert('Erro', `Não foi possível carregar as equipes: ${error.message}`);
+          }
+          return;
+        }
+
+        console.log('✅ Equipes carregadas do Supabase:', data);
+        setTeams(data || []);
+
+        // Salva no cache para uso offline
+        if (data && data.length > 0) {
+          await TableStore.set('teams', data);
+          console.log('💾 Equipes salvas no cache');
+        }
+      } else {
+        // Offline: busca do cache
+        console.log('⚠️ Sem conexão - buscando do cache');
+        const cachedTeams = await TableStore.get('teams');
+
+        if (cachedTeams && cachedTeams.length > 0) {
+          console.log('📦 Equipes carregadas do cache:', cachedTeams);
+          setTeams(cachedTeams);
+        } else {
+          console.warn('❌ Nenhuma equipe no cache');
+          Alert.alert(
+            'Modo Offline',
+            'Você está sem conexão e não há dados em cache. Conecte-se à internet para fazer login pela primeira vez.'
+          );
+        }
       }
-      console.log('Equipes carregadas:', data);
-      setTeams(data || []);
     } catch (error) {
       console.error('Erro ao buscar equipes:', error);
-      Alert.alert('Erro', 'Ocorreu um erro ao carregar as equipes. Verifique sua conexão.');
+
+      // Fallback final: tenta cache
+      const cachedTeams = await TableStore.get('teams');
+      if (cachedTeams && cachedTeams.length > 0) {
+        console.log('📦 Usando cache como fallback');
+        setTeams(cachedTeams);
+        setIsOffline(true);
+      } else {
+        Alert.alert('Erro', 'Ocorreu um erro ao carregar as equipes. Verifique sua conexão.');
+      }
     }
   };
 
@@ -70,77 +120,166 @@ export default function Login() {
     }
 
     try {
-      // 1. Obter o ID real da equipe na tabela 'teams' usando o código da equipe selecionado
-      const { data: teamData, error: teamError } = await supabase
-        .from('teams')
-        .select('id')
-        .eq('code', selectedTeam)
-        .single(); // Assumindo que os códigos de equipe são únicos
+      const online = Platform.OS === 'web' ? navigator.onLine : true;
 
-      if (teamError) {
-        console.error('Erro ao buscar ID da equipe:', teamError);
-        Alert.alert('Erro', 'Ocorreu um erro ao buscar informações da equipe. Tente novamente.');
-        return;
+      if (online) {
+        // LOGIN ONLINE
+        // 1. Obter o ID real da equipe na tabela 'teams' usando o código da equipe selecionado
+        const { data: teamData, error: teamError } = await supabase
+          .from('teams')
+          .select('id')
+          .eq('code', selectedTeam)
+          .single();
+
+        if (teamError) {
+          console.error('Erro ao buscar ID da equipe:', teamError);
+          Alert.alert('Erro', 'Ocorreu um erro ao buscar informações da equipe. Tente novamente.');
+          return;
+        }
+
+        if (!teamData) {
+          Alert.alert('Erro', 'Equipe selecionada inválida.');
+          return;
+        }
+
+        // 2. Verificar o código do representante e o ID da equipe real na tabela 'users'
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id, user_id, team_id, name')
+          .eq('user_id', code)
+          .eq('team_id', selectedTeam);
+
+        if (userError) {
+          console.error('Erro ao buscar usuário:', userError);
+          Alert.alert('Erro', 'Ocorreu um erro ao verificar suas credenciais. Tente novamente.');
+          return;
+        }
+
+        if (!userData || userData.length === 0) {
+          Alert.alert('Erro', 'Código de representante ou equipe inválidos.');
+          return;
+        }
+
+        const foundUser = userData[0];
+        const representativeCodeToStore = foundUser.user_id;
+        const representativeNameToStore = foundUser.name;
+
+        // 3. Salvar credenciais no AsyncStorage
+        await AsyncStorage.setItem('selectedTeamCode', String(selectedTeam));
+
+        const codigosSalvosStr = await AsyncStorage.getItem('codigosRepresentante');
+        let codigosArray = codigosSalvosStr ? JSON.parse(codigosSalvosStr) : [];
+
+        if (!codigosArray.includes(representativeCodeToStore)) {
+          codigosArray.push(representativeCodeToStore);
+          await AsyncStorage.setItem('codigosRepresentante', JSON.stringify(codigosArray));
+        }
+
+        await AsyncStorage.setItem('representativeCodeToStore', representativeCodeToStore);
+        await AsyncStorage.setItem('representanteNome', representativeNameToStore);
+
+        // 4. Cachear dados do usuário para uso offline
+        await TableStore.set('users', userData);
+        console.log('💾 Dados do usuário salvos no cache');
+
+        console.log('✅ Login online bem-sucedido');
+        console.log('Código do representante:', representativeCodeToStore);
+        console.log('Nome do representante:', representativeNameToStore);
+
+        // 5. Preparar app para modo offline (em background)
+        console.log('🔄 Preparando app para modo offline...');
+        OfflineCache.prepare([
+          'teams',
+          'products',
+          'clients',
+          'brands',
+          'categories'
+        ]).then(result => {
+          if (result.success) {
+            console.log('✅ App preparado para modo offline!');
+          } else {
+            console.warn('⚠️ Preparação offline concluída com erros:', result.errors);
+          }
+        }).catch(err => {
+          console.error('❌ Erro ao preparar modo offline:', err);
+        });
+
+        router.push('/(app)/orders');
+      } else {
+        // LOGIN OFFLINE
+        console.log('🔴 Tentando login offline...');
+
+        // Busca usuários do cache
+        const cachedUsers = await TableStore.get('users');
+
+        if (!cachedUsers || cachedUsers.length === 0) {
+          Alert.alert(
+            'Modo Offline',
+            'Você está sem conexão e não há dados em cache. Conecte-se à internet para fazer login pela primeira vez.'
+          );
+          return;
+        }
+
+        // Verifica se o usuário existe no cache
+        const foundUser = cachedUsers.find(
+          (u: any) => u.user_id === code && u.team_id === selectedTeam
+        );
+
+        if (!foundUser) {
+          Alert.alert('Erro', 'Código de representante ou equipe inválidos.');
+          return;
+        }
+
+        // Salvar credenciais no AsyncStorage
+        await AsyncStorage.setItem('selectedTeamCode', String(selectedTeam));
+        await AsyncStorage.setItem('representativeCodeToStore', foundUser.user_id);
+        await AsyncStorage.setItem('representanteNome', foundUser.name);
+
+        console.log('✅ Login offline bem-sucedido');
+        console.log('Código do representante:', foundUser.user_id);
+        console.log('Nome do representante:', foundUser.name);
+
+        router.push('/(app)/orders');
       }
-
-      if (!teamData) {
-        Alert.alert('Erro', 'Equipe selecionada inválida.');
-        return;
-      }
-
-      const actualTeamId = teamData.id;
-
-      // 2. Verificar o código do representante e o ID da equipe real na tabela 'users'
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, user_id, team_id, name')
-        .eq('user_id', code)
-        .eq('team_id', selectedTeam);
-
-      if (userError) {
-        console.error('Erro ao buscar usuário:', userError);
-        Alert.alert('Erro', 'Ocorreu um erro ao verificar suas credenciais. Tente novamente.');
-        return;
-      }
-
-      if (!userData || userData.length === 0) {
-        Alert.alert('Erro', 'Código de representante ou equipe inválidos.');
-        return;
-      }
-
-      const foundUser = userData[0];
-      const representativeCodeToStore = foundUser.user_id;
-      const representativeNameToStore = foundUser.name;
-
-      // 3. Lógica para salvar o código e o nome do representante no AsyncStorage
-      // Salvar o código da equipe
-      await AsyncStorage.setItem('selectedTeamCode', String(selectedTeam)); // Salvar o código numérico como string
-
-      const codigosSalvosStr = await AsyncStorage.getItem('codigosRepresentante');
-      let codigosArray = codigosSalvosStr ? JSON.parse(codigosSalvosStr) : [];
-
-      if (!codigosArray.includes(representativeCodeToStore)) {
-        codigosArray.push(representativeCodeToStore);
-        await AsyncStorage.setItem('codigosRepresentante', JSON.stringify(codigosArray));
-      }
-      // Salvar o código do representante separadamente
-      await AsyncStorage.setItem('representativeCodeToStore', representativeCodeToStore);
-
-      // Salvar o nome do representante separadamente ou em um objeto mais complexo
-      await AsyncStorage.setItem('representanteNome', representativeNameToStore);
-
-      console.log('Código do representante salvo no AsyncStorage:', representativeCodeToStore);
-      console.log('Nome do representante salvo no AsyncStorage:', representativeNameToStore);
-
-      router.push('/(app)/orders');
     } catch (error) {
       console.error('Erro ao tentar login ou salvar código:', error);
+
+      // Fallback offline em caso de erro
+      try {
+        console.log('🔄 Tentando fallback offline...');
+        const cachedUsers = await TableStore.get('users');
+
+        if (cachedUsers && cachedUsers.length > 0) {
+          const foundUser = cachedUsers.find(
+            (u: any) => u.user_id === code && u.team_id === selectedTeam
+          );
+
+          if (foundUser) {
+            await AsyncStorage.setItem('selectedTeamCode', String(selectedTeam));
+            await AsyncStorage.setItem('representativeCodeToStore', foundUser.user_id);
+            await AsyncStorage.setItem('representanteNome', foundUser.name);
+
+            console.log('✅ Login offline (fallback) bem-sucedido');
+            router.push('/(app)/orders');
+            return;
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Erro no fallback offline:', fallbackError);
+      }
+
       Alert.alert('Erro', 'Ocorreu um erro inesperado ao fazer login. Tente novamente.');
     }
   };
 
   return (
     <View style={styles.container}>
+      {isOffline && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineText}>🔴 Modo Offline</Text>
+        </View>
+      )}
+
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Image source={logoDmuller} style={styles.logo} resizeMode="contain" />
@@ -197,6 +336,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#003B71',
+  },
+  offlineBanner: {
+    backgroundColor: '#ef4444',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    ...Platform.select({
+      web: {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+      }
+    }),
+  },
+  offlineText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   content: {
     flex: 1,
