@@ -6,11 +6,25 @@ Serviço completo de sincronização bidirecional entre banco local (PouchDB) e 
 
 - ✅ Upload de registros locais para Supabase
 - ✅ Download de registros do Supabase para local
+- ✅ **Sincronização Incremental** - Baixa apenas dados novos/atualizados
+- ✅ **Tabela sync_meta** - Persiste timestamps de sincronização
 - ✅ Sincronização completa (upload + download)
 - ✅ Eventos em tempo real para UI
 - ✅ Sincronização por tabela
 - ✅ Controle de última sincronização
 - ✅ Tratamento de erros robusto
+
+## 🚀 Novidade: Sincronização Incremental
+
+A partir de agora, o SyncService usa uma tabela interna `sync_meta` no PouchDB para salvar:
+- `last_upload_at` - Timestamp do último upload
+- `last_download_at` - Timestamp do último download
+
+### Como funciona:
+
+1. **Primeira sincronização**: Baixa todos os dados
+2. **Sincronizações seguintes**: Baixa apenas dados com `updated_at > last_download_at`
+3. **Economia**: Reduz drasticamente o tráfego de rede e tempo de sincronização
 
 ## 📦 Importação
 
@@ -426,6 +440,100 @@ Remove todos os event listeners.
 
 ```typescript
 SyncService.clearListeners();
+```
+
+### `getSyncMetadata(table: string)`
+
+Retorna metadados de sincronização de uma tabela.
+
+```typescript
+const meta = await SyncService.getSyncMetadata('products');
+
+console.log(`Tabela: ${meta.table}`);
+console.log(`Último upload: ${meta.last_upload_at}`);
+console.log(`Último download: ${meta.last_download_at}`);
+```
+
+### `getAllSyncMetadata()`
+
+Retorna metadados de todas as tabelas.
+
+```typescript
+const allMeta = await SyncService.getAllSyncMetadata();
+
+allMeta.forEach(meta => {
+  console.log(`${meta.table}:`);
+  console.log(`  Upload: ${meta.last_upload_at}`);
+  console.log(`  Download: ${meta.last_download_at}`);
+});
+```
+
+### `resetSyncMetadata(table: string)`
+
+Reseta os metadados de sincronização de uma tabela (força download completo na próxima vez).
+
+```typescript
+await SyncService.resetSyncMetadata('products');
+// Próximo download será completo, não incremental
+```
+
+### `resetAllSyncMetadata()`
+
+Reseta todos os metadados de sincronização.
+
+```typescript
+await SyncService.resetAllSyncMetadata();
+// Todas as tabelas farão download completo na próxima sincronização
+```
+
+## 📊 Monitoramento de Sincronização
+
+### Verificar Status de Sincronização
+
+```typescript
+import SyncService from '@/lib/SyncService';
+
+async function checkSyncStatus() {
+  const allMeta = await SyncService.getAllSyncMetadata();
+
+  console.log('📊 Status de Sincronização:');
+  console.log('');
+
+  for (const meta of allMeta) {
+    console.log(`Tabela: ${meta.table}`);
+
+    if (meta.last_download_at) {
+      const lastDownload = new Date(meta.last_download_at);
+      const minutesAgo = Math.floor((Date.now() - lastDownload.getTime()) / 60000);
+      console.log(`  ⬇️ Último download: ${minutesAgo} minutos atrás`);
+    } else {
+      console.log(`  ⬇️ Último download: Nunca`);
+    }
+
+    if (meta.last_upload_at) {
+      const lastUpload = new Date(meta.last_upload_at);
+      const minutesAgo = Math.floor((Date.now() - lastUpload.getTime()) / 60000);
+      console.log(`  ⬆️ Último upload: ${minutesAgo} minutos atrás`);
+    } else {
+      console.log(`  ⬆️ Último upload: Nunca`);
+    }
+
+    console.log('');
+  }
+}
+
+// Usar em um componente
+checkSyncStatus();
+```
+
+### Forçar Sincronização Completa
+
+```typescript
+// Reseta metadados para forçar download completo
+await SyncService.resetSyncMetadata('products');
+
+// Baixa tudo novamente
+await SyncService.downloadTable('products');
 ```
 
 ## ⚠️ Avisos Importantes

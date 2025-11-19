@@ -24,6 +24,7 @@ export class SyncService {
   private static listeners: Map<SyncEventType, EventListener[]> = new Map();
   private static isSyncing = false;
   private static lastSyncTime: Record<string, Date> = {};
+  private static SYNC_META_TABLE = 'sync_meta';
 
   static on(eventType: SyncEventType, listener: EventListener): void {
     if (!this.listeners.has(eventType)) {
@@ -49,6 +50,65 @@ export class SyncService {
     }
   }
 
+  /**
+   * Busca metadados de sincronização do PouchDB
+   */
+  private static async getSyncMeta(table: string): Promise<{
+    last_upload_at: string | null;
+    last_download_at: string | null;
+  }> {
+    try {
+      const records = await LocalDB.getAll(this.SYNC_META_TABLE);
+      const meta = records.find(r => r.payload.table === table);
+
+      if (meta) {
+        return {
+          last_upload_at: meta.payload.last_upload_at || null,
+          last_download_at: meta.payload.last_download_at || null,
+        };
+      }
+
+      return {
+        last_upload_at: null,
+        last_download_at: null,
+      };
+    } catch (error) {
+      console.error(`Erro ao buscar sync_meta de '${table}':`, error);
+      return {
+        last_upload_at: null,
+        last_download_at: null,
+      };
+    }
+  }
+
+  /**
+   * Atualiza metadados de sincronização no PouchDB
+   */
+  private static async updateSyncMeta(
+    table: string,
+    updates: {
+      last_upload_at?: string;
+      last_download_at?: string;
+    }
+  ): Promise<void> {
+    try {
+      const records = await LocalDB.getAll(this.SYNC_META_TABLE);
+      const existing = records.find(r => r.payload.table === table);
+
+      const payload = {
+        table,
+        last_upload_at: updates.last_upload_at || existing?.payload.last_upload_at || null,
+        last_download_at: updates.last_download_at || existing?.payload.last_download_at || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      await LocalDB.save(this.SYNC_META_TABLE, payload);
+      console.log(`✅ sync_meta atualizado para '${table}'`);
+    } catch (error) {
+      console.error(`Erro ao atualizar sync_meta de '${table}':`, error);
+    }
+  }
+
   static async upload(config?: Partial<SyncConfig>): Promise<{
     success: number;
     failed: number;
@@ -60,13 +120,19 @@ export class SyncService {
       errors: [] as Array<{ table: string; error: Error }>,
     };
 
+    const uploadTimestamp = new Date().toISOString();
+
     try {
       this.emit({ type: 'sync-start', message: 'Iniciando upload...' });
 
       const allTables = await LocalDB.getAllTables();
       const records = [];
+      const processedTables = new Set<string>();
 
       for (const table of allTables) {
+        // Ignora a tabela de metadados
+        if (table === this.SYNC_META_TABLE) continue;
+
         const tableRecords = await LocalDB.getAll(table);
         const unsyncedRecords = tableRecords.filter(
           (record) => !record.payload._synced
@@ -95,6 +161,8 @@ export class SyncService {
           delete cleanPayload._id;
           delete cleanPayload._createdAt;
           delete cleanPayload._updatedAt;
+          delete cleanPayload._tableStore;
+          delete cleanPayload._lastSync;
 
           const { error } = await supabase.from(table).upsert(cleanPayload);
 
@@ -106,6 +174,7 @@ export class SyncService {
 
           results.success++;
           processed++;
+          processedTables.add(table);
 
           this.emit({
             type: 'sync-progress',
@@ -121,6 +190,13 @@ export class SyncService {
           });
           console.error(`Erro ao sincronizar registro da tabela ${record.table}:`, error);
         }
+      }
+
+      // Atualiza sync_meta para todas as tabelas processadas
+      for (const table of processedTables) {
+        await this.updateSyncMeta(table, {
+          last_upload_at: uploadTimestamp,
+        });
       }
 
       return results;
@@ -143,6 +219,8 @@ export class SyncService {
       errors: [] as Array<{ table: string; error: Error }>,
     };
 
+    const downloadTimestamp = new Date().toISOString();
+
     try {
       this.emit({ type: 'sync-start', message: 'Iniciando download...' });
 
@@ -152,11 +230,16 @@ export class SyncService {
 
       for (const table of tables) {
         try {
-          const lastSync = this.lastSyncTime[table];
+          // Busca o último download desta tabela
+          const syncMeta = await this.getSyncMeta(table);
           let query = supabase.from(table).select('*');
 
-          if (lastSync) {
-            query = query.gt('updated_at', lastSync.toISOString());
+          // Sincronização incremental: busca apenas dados novos
+          if (syncMeta.last_download_at) {
+            console.log(`🔄 [SyncService] Download incremental de '${table}' (desde ${syncMeta.last_download_at})`);
+            query = query.gt('updated_at', syncMeta.last_download_at);
+          } else {
+            console.log(`🔄 [SyncService] Download completo de '${table}' (primeira vez)`);
           }
 
           const { data, error } = await query;
@@ -166,8 +249,12 @@ export class SyncService {
           }
 
           if (data && data.length > 0) {
-            await LocalDB.clear(table);
+            // Se é primeira vez, limpa a tabela
+            if (!syncMeta.last_download_at) {
+              await LocalDB.clear(table);
+            }
 
+            // Salva os registros novos/atualizados
             for (const record of data) {
               await LocalDB.save(table, {
                 ...record,
@@ -176,11 +263,17 @@ export class SyncService {
             }
 
             results.downloaded[table] = data.length;
+            console.log(`✅ [SyncService] ${data.length} registros baixados de '${table}'`);
           } else {
             results.downloaded[table] = 0;
+            console.log(`ℹ️ [SyncService] Nenhum registro novo em '${table}'`);
           }
 
-          this.lastSyncTime[table] = new Date();
+          // Atualiza timestamp do último download
+          await this.updateSyncMeta(table, {
+            last_download_at: downloadTimestamp,
+          });
+
           processed++;
 
           this.emit({
@@ -318,11 +411,16 @@ export class SyncService {
 
   static async downloadTable(table: string, fullRefresh = false): Promise<number> {
     try {
-      const lastSync = fullRefresh ? null : this.lastSyncTime[table];
+      const downloadTimestamp = new Date().toISOString();
+      const syncMeta = fullRefresh ? null : await this.getSyncMeta(table);
       let query = supabase.from(table).select('*');
 
-      if (lastSync) {
-        query = query.gt('updated_at', lastSync.toISOString());
+      // Sincronização incremental
+      if (syncMeta && syncMeta.last_download_at && !fullRefresh) {
+        console.log(`🔄 [SyncService] Download incremental de '${table}' (desde ${syncMeta.last_download_at})`);
+        query = query.gt('updated_at', syncMeta.last_download_at);
+      } else {
+        console.log(`🔄 [SyncService] Download completo de '${table}'`);
       }
 
       const { data, error } = await query;
@@ -332,7 +430,7 @@ export class SyncService {
       }
 
       if (data && data.length > 0) {
-        if (fullRefresh) {
+        if (fullRefresh || !syncMeta?.last_download_at) {
           await LocalDB.clear(table);
         }
 
@@ -343,9 +441,22 @@ export class SyncService {
           });
         }
 
-        this.lastSyncTime[table] = new Date();
+        console.log(`✅ [SyncService] ${data.length} registros baixados de '${table}'`);
+
+        // Atualiza timestamp
+        await this.updateSyncMeta(table, {
+          last_download_at: downloadTimestamp,
+        });
+
         return data.length;
       }
+
+      console.log(`ℹ️ [SyncService] Nenhum registro novo em '${table}'`);
+
+      // Atualiza timestamp mesmo sem dados novos
+      await this.updateSyncMeta(table, {
+        last_download_at: downloadTimestamp,
+      });
 
       return 0;
     } catch (error) {
@@ -366,6 +477,71 @@ export class SyncService {
 
   static clearListeners(): void {
     this.listeners.clear();
+  }
+
+  /**
+   * Retorna metadados de sincronização de uma tabela
+   */
+  static async getSyncMetadata(table: string): Promise<{
+    table: string;
+    last_upload_at: string | null;
+    last_download_at: string | null;
+  }> {
+    const meta = await this.getSyncMeta(table);
+    return {
+      table,
+      ...meta,
+    };
+  }
+
+  /**
+   * Retorna metadados de sincronização de todas as tabelas
+   */
+  static async getAllSyncMetadata(): Promise<Array<{
+    table: string;
+    last_upload_at: string | null;
+    last_download_at: string | null;
+  }>> {
+    try {
+      const records = await LocalDB.getAll(this.SYNC_META_TABLE);
+      return records.map(r => ({
+        table: r.payload.table,
+        last_upload_at: r.payload.last_upload_at || null,
+        last_download_at: r.payload.last_download_at || null,
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar todos sync_meta:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Reseta os metadados de sincronização de uma tabela
+   */
+  static async resetSyncMetadata(table: string): Promise<void> {
+    try {
+      const records = await LocalDB.getAll(this.SYNC_META_TABLE);
+      const meta = records.find(r => r.payload.table === table);
+
+      if (meta) {
+        await LocalDB.delete(meta._id);
+        console.log(`✅ Metadados de sincronização resetados para '${table}'`);
+      }
+    } catch (error) {
+      console.error(`Erro ao resetar sync_meta de '${table}':`, error);
+    }
+  }
+
+  /**
+   * Reseta todos os metadados de sincronização
+   */
+  static async resetAllSyncMetadata(): Promise<void> {
+    try {
+      await LocalDB.clear(this.SYNC_META_TABLE);
+      console.log('✅ Todos os metadados de sincronização foram resetados');
+    } catch (error) {
+      console.error('Erro ao resetar todos sync_meta:', error);
+    }
   }
 }
 
