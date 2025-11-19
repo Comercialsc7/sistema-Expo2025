@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
-import { useLocalDB } from '@/hooks/useLocalDB';
+import { useLocalDB } from '../../hooks/useLocalDB';
 
 interface Task {
   id?: string;

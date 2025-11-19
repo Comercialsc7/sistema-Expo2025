@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { usePWA } from '@/hooks/usePWA';
+import { usePWA } from '../../hooks/usePWA';
 import { X, Download } from 'lucide-react-native';
 
 export function InstallPWABanner() {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { WifiOff } from 'lucide-react-native';
 
 export function OfflineIndicator() {

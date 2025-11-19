@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import LocalDB from '@/lib/LocalDB';
+import LocalDB from '../lib/LocalDB';
 
 interface UseLocalDBResult<T = any> {
   data: T[];

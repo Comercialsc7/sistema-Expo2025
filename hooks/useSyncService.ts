@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import SyncService, { SyncEvent, SyncConfig } from '@/lib/SyncService';
+import SyncService, { SyncEvent, SyncConfig } from '../lib/SyncService';
 
 interface UseSyncServiceResult {
   syncing: boolean;

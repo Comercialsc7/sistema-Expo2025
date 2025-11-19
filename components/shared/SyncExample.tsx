@@ -7,9 +7,9 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { useSyncService } from '@/hooks/useSyncService';
-import { useLocalDB } from '@/hooks/useLocalDB';
-import LocalDB from '@/lib/LocalDB';
+import { useSyncService } from '../../hooks/useSyncService';
+import { useLocalDB } from '../../hooks/useLocalDB';
+import LocalDB from '../../lib/LocalDB';
 
 interface DemoRecord {
   id?: string;
