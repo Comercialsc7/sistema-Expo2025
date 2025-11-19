@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList, ActivityIndicator, Alert, Modal, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { useNavigation } from '../hooks/useNavigation';
 import { useCachedOrdersStore, CachedOrder } from '../store/useCachedOrdersStore';
@@ -7,6 +7,8 @@ import { decode } from 'base64-arraybuffer';
 import { OrderItem } from './components/OrderItem';
 import { OrderDetailsModal } from './components/OrderDetailsModal';
 import { styles } from './styles/sync-orders.styles';
+import { useSyncService } from '../hooks/useSyncService';
+import LocalDB from '../lib/LocalDB';
 
 const closeIcon = require('../assets/images/x.png');
 const backIcon = require('../assets/images/voltar.png');
@@ -15,6 +17,7 @@ const lixeiraIcon = require('../assets/images/lixeira.png');
 export default function SyncOrdersScreen() {
   const { goBack } = useNavigation();
   const { cachedOrders, clearCachedOrders, getOrderById, _hasHydrated, removeCachedOrder } = useCachedOrdersStore();
+  const { syncing, progress, total, message, error: syncError, sync, upload, download } = useSyncService();
   const [isSending, setIsSending] = useState(false);
   const [isReceiving, setIsReceiving] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -22,11 +25,32 @@ export default function SyncOrdersScreen() {
   const [isDeleteConfirmModalVisible, setIsDeleteConfirmModalVisible] = useState(false);
   const [orderIdToDelete, setOrderIdToDelete] = useState<string | null>(null);
   const [sentOrders, setSentOrders] = useState<string[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const setSelectedOrder = useCallback((order: CachedOrder | null) => {
     console.log('setSelectedOrder chamado com:', order?.id);
     _setSelectedOrder(order);
   }, []);
+
+  useEffect(() => {
+    async function countPending() {
+      try {
+        const allTables = await LocalDB.getAllTables();
+        let count = 0;
+        for (const table of allTables) {
+          const records = await LocalDB.getAll(table);
+          const unsynced = records.filter(r => !r.payload._synced);
+          count += unsynced.length;
+        }
+        setPendingCount(count);
+      } catch (error) {
+        console.error('Erro ao contar registros pendentes:', error);
+      }
+    }
+    countPending();
+    const interval = setInterval(countPending, 3000);
+    return () => clearInterval(interval);
+  }, [syncing]);
 
   const handleSendData = useCallback(async () => {
     try {
@@ -166,9 +190,9 @@ export default function SyncOrdersScreen() {
     try {
       setIsReceiving(true);
       setSyncStatus('idle');
-      
+
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       setSyncStatus('success');
       Alert.alert('Sucesso', 'Dados recebidos com sucesso!');
     } catch (error) {
@@ -179,6 +203,33 @@ export default function SyncOrdersScreen() {
     }
   }, []);
 
+  const handleSyncUpload = useCallback(async () => {
+    try {
+      await upload();
+      Alert.alert('Sucesso', 'Pendências enviadas com sucesso!');
+    } catch (error) {
+      Alert.alert('Erro', 'Falha ao enviar pendências. Tente novamente.');
+    }
+  }, [upload]);
+
+  const handleSyncDownload = useCallback(async () => {
+    try {
+      await download(['pedidos', 'products', 'clients']);
+      Alert.alert('Sucesso', 'Dados atualizados do servidor!');
+    } catch (error) {
+      Alert.alert('Erro', 'Falha ao baixar dados. Tente novamente.');
+    }
+  }, [download]);
+
+  const handleFullSync = useCallback(async () => {
+    try {
+      await sync(['pedidos', 'products', 'clients']);
+      Alert.alert('Sucesso', 'Sincronização completa concluída!');
+    } catch (error) {
+      Alert.alert('Erro', 'Falha na sincronização. Tente novamente.');
+    }
+  }, [sync]);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -187,16 +238,40 @@ export default function SyncOrdersScreen() {
   };
 
   const renderSyncStatus = () => {
-    if (syncStatus === 'idle') return null;
-    
+    if (!syncing && syncStatus === 'idle' && !syncError) return null;
+
     return (
       <View style={styles.syncStatus}>
-        <Text style={[
-          styles.syncStatusText,
-          syncStatus === 'success' ? styles.successText : styles.errorText
-        ]}>
-          {syncStatus === 'success' ? 'Sincronização concluída!' : 'Erro na sincronização'}
-        </Text>
+        {syncing && (
+          <>
+            <Text style={styles.syncStatusText}>{message}</Text>
+            {total > 0 && (
+              <>
+                <View style={styles.progressBarContainer}>
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${Math.round((progress / total) * 100)}%` }
+                    ]}
+                  />
+                </View>
+                <Text style={styles.progressText}>
+                  {progress}/{total} ({Math.round((progress / total) * 100)}%)
+                </Text>
+              </>
+            )}
+          </>
+        )}
+        {!syncing && syncError && (
+          <Text style={[styles.syncStatusText, styles.errorText]}>
+            Erro: {syncError.message}
+          </Text>
+        )}
+        {!syncing && syncStatus === 'success' && (
+          <Text style={[styles.syncStatusText, styles.successText]}>
+            Sincronização concluída!
+          </Text>
+        )}
       </View>
     );
   };
@@ -210,45 +285,68 @@ export default function SyncOrdersScreen() {
         <Text style={styles.headerTitle}>Sincronização</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        <View style={styles.content}> 
+        <View style={styles.content}>
           <Text style={styles.descriptionText}>Gerencie o envio e recebimento de dados de pedidos.</Text>
-          
+
+          <View style={styles.statsContainer}>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{pendingCount}</Text>
+              <Text style={styles.statLabel}>Registros Pendentes</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{cachedOrders.length}</Text>
+              <Text style={styles.statLabel}>Pedidos em Cache</Text>
+            </View>
+          </View>
+
           {renderSyncStatus()}
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                styles.button, 
+                styles.button,
                 styles.sendButton,
-                (isSending || isReceiving) && styles.buttonDisabled
-              ]} 
-              onPress={handleSendData}
-              disabled={isSending || isReceiving}
+                syncing && styles.buttonDisabled
+              ]}
+              onPress={handleSyncUpload}
+              disabled={syncing}
             >
-              {isSending ? (
+              {syncing ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <>
-                  <Text style={styles.buttonText}>Enviar Dados</Text>
-                </>
+                <Text style={styles.buttonText}>⬆️ Enviar Pendências</Text>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                styles.button, 
+                styles.button,
                 styles.receiveButton,
-                (isSending || isReceiving) && styles.buttonDisabled
-              ]} 
-              onPress={handleReceiveData}
-              disabled={isSending || isReceiving}
+                syncing && styles.buttonDisabled
+              ]}
+              onPress={handleSyncDownload}
+              disabled={syncing}
             >
-              {isReceiving ? (
+              {syncing ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <>
-                  <Text style={styles.buttonText}>Receber Dados</Text>
-                </>
+                <Text style={styles.buttonText}>⬇️ Atualizar Dados</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.syncButton,
+                syncing && styles.buttonDisabled
+              ]}
+              onPress={handleFullSync}
+              disabled={syncing}
+            >
+              {syncing ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>🔄 Sincronizar Tudo</Text>
               )}
             </TouchableOpacity>
           </View>
