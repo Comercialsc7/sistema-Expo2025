@@ -20,6 +20,9 @@ export const styles = StyleSheet.create({
     fontWeight: 'bold',
     flex: 1,
   },
+  headerBadge: {
+    marginLeft: 8,
+  },
   scrollViewContent: {
     padding: 16,
     paddingBottom: 80,

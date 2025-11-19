@@ -1,29 +1,52 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
+import SyncService from '../lib/SyncService';
 
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(true);
+  const previousOnlineState = useRef(true);
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
       return;
     }
 
-    const updateOnlineStatus = () => {
-      setIsOnline(navigator.onLine);
-      console.log('Status de conexão:', navigator.onLine ? 'Online' : 'Offline');
+    const handleOnline = async () => {
+      console.log('✅ Conexão restabelecida - executando auto-sync');
+      setIsOnline(true);
+
+      // Só sincroniza se estava offline antes
+      if (!previousOnlineState.current) {
+        try {
+          const syncService = SyncService.getInstance();
+          await syncService.upload();
+          console.log('✅ Auto-sync concluído com sucesso');
+        } catch (error) {
+          console.error('❌ Erro no auto-sync:', error);
+        }
+      }
+
+      previousOnlineState.current = true;
+    };
+
+    const handleOffline = () => {
+      console.log('⚠️ Conexão perdida - modo offline ativado');
+      setIsOnline(false);
+      previousOnlineState.current = false;
     };
 
     // Definir estado inicial
-    updateOnlineStatus();
+    const initialStatus = navigator.onLine;
+    setIsOnline(initialStatus);
+    previousOnlineState.current = initialStatus;
 
     // Adicionar event listeners
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     return () => {
-      window.removeEventListener('online', updateOnlineStatus);
-      window.removeEventListener('offline', updateOnlineStatus);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 

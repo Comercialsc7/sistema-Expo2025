@@ -9,6 +9,7 @@ import { OrderDetailsModal } from './components/OrderDetailsModal';
 import { styles } from './styles/sync-orders.styles';
 import { useSyncService } from '../hooks/useSyncService';
 import LocalDB from '../lib/LocalDB';
+import { ConnectionBadge } from '../components/shared/ConnectionBadge';
 
 const closeIcon = require('../assets/images/x.png');
 const backIcon = require('../assets/images/voltar.png');
@@ -283,6 +284,9 @@ export default function SyncOrdersScreen() {
           <Image source={backIcon} style={{ width: 24, height: 24 }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Sincronização</Text>
+        <View style={styles.headerBadge}>
+          <ConnectionBadge />
+        </View>
       </View>
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
         <View style={styles.content}>
