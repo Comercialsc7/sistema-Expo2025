@@ -25,6 +25,14 @@ if (fs.existsSync(swSource)) {
   console.log('✓ service-worker.js copiado para dist/');
 }
 
+// Copiar offline.html
+const offlineSource = path.join(publicPath, 'offline.html');
+const offlineDest = path.join(distPath, 'offline.html');
+if (fs.existsSync(offlineSource)) {
+  fs.copyFileSync(offlineSource, offlineDest);
+  console.log('✓ offline.html copiado para dist/');
+}
+
 // Copiar ícones para assets/images
 const assetsImagesPath = path.join(distPath, 'assets', 'images');
 if (!fs.existsSync(assetsImagesPath)) {

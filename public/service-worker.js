@@ -1,12 +1,16 @@
 // Nome do cache
-const CACHE_NAME = 'expo2025-cache-v2';
-const RUNTIME_CACHE = 'expo2025-runtime-v2';
-const IMAGE_CACHE = 'expo2025-images-v2';
+const CACHE_NAME = 'expo2025-cache-v3';
+const RUNTIME_CACHE = 'expo2025-runtime-v3';
+const IMAGE_CACHE = 'expo2025-images-v3';
 
 // Recursos essenciais para cache
 const urlsToCache = [
   '/',
+  '/index.html',
   '/manifest.json',
+  '/assets/images/icon.png',
+  '/favicon.ico',
+  '/offline.html',
 ];
 
 // Estratégia: Cache First, fallback para Network
@@ -42,6 +46,15 @@ const networkFirst = async (request) => {
     if (cached) {
       return cached;
     }
+
+    // Se for uma requisição de navegação e não temos cache, mostrar página offline
+    if (request.mode === 'navigate') {
+      const offlinePage = await cache.match('/offline.html');
+      if (offlinePage) {
+        return offlinePage;
+      }
+    }
+
     throw error;
   }
 };
